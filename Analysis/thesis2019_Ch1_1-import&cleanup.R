@@ -238,4 +238,4 @@ for (i in 1:ncol(catchmatrix.biwk.stdtrans)){ #starts at 3 to exclude Year and s
 #   summarise(dailymeanspeed = mean(windhrly_mph, na.rm = TRUE),
 #             dailymeandir = ((circ.mean(2*pi*na.omit(windhrly_dir)/360))*(360 / (2*pi))) %%360 )
 # 
-# write.csv(winddaily, file="deadhorsewind_2001-2018.csv")
+# write.csv(winddaily, file="deadhorsewind_2001-2018_summarized.csv")
