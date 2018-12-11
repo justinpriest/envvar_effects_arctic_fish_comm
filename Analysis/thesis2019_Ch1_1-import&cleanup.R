@@ -1,5 +1,6 @@
 ###########
-# Data Import and Cleanup
+# DATA IMPORT AND CLEANUP
+
 
 # This is the first script for Justin Priest's thesis analyses, Chapter 1
 # Data is pulled from an .RData file, which was compiled using a script from
@@ -20,24 +21,19 @@ library(CircStats)
 # Read in the length, catch, and environmental data, plus species lookup table
 load("Data/PrudhoeCatch&LengthDataset_2001-2018_Version11.Rdata")
 
-# Clean up dataframe
-allcatch <- allcatch %>% mutate(Net = factor(Net), 
-                    Station = factor(substr(Net, 1, 3)))
-
+# Clean up dataframes
+allcatch <- allcatch %>% mutate(Net = factor(Net), Station = factor(substr(Net, 1, 3)))
 env_allyears <- env_allyears %>% mutate(Station = factor(Station))
-
 
 allcatch <- allcatch %>% add_column(Month = month(allcatch$EndDate), .after = 2)
 env_allyears <- env_allyears %>% add_column(Month = month(env_allyears$Date), .after = 2)
 
-
 # Separate out the temp and salinity. Drop the columns that are irrelevant
-# Put data into 'long' format. NOTE: They used a slightly different definition 
-# of the bottom in early years ('bottom 1.5'). I define this as analogous to 'bottom'
+# NOTE: They used a slightly different definition of the bottom in early years ('bottom 1.5'). 
+# I define bottom 1.5 as analogous to 'bottom'
 watertemps <- env_allyears %>% dplyr::select(-c(Salin_Top, Salin_Mid, Salin_Bot, Salin_Bot_1.5)) 
 watersalin <- env_allyears %>% dplyr::select(-c(Temp_Top, Temp_Mid, Temp_Bot, Temp_Bot_1.5)) 
 
-# if needed for later: watersalin %>% gather(depth, salin_ppt, -c(Year, Date, Month, Station))
 
 
 ##### WIND #####
@@ -47,7 +43,6 @@ watersalin <- env_allyears %>% dplyr::select(-c(Temp_Top, Temp_Mid, Temp_Bot, Te
 # Station WBAN:27406
 # These data were downloaded in 10-year increments (LCD CSV). 
 # In appendix (at end of this doc, I summarized hourly data into a daily summary)
-
 
 deadhorsewind <- read.csv("Data/deadhorsewind_2001-2018_daily_summarized.csv", header = TRUE, 
                           stringsAsFactors = FALSE) %>% 
@@ -64,6 +59,7 @@ deadhorsewind <- read.csv("Data/deadhorsewind_2001-2018_daily_summarized.csv", h
 ##### DISCHARGE #####
 # Data from USGS https://waterdata.usgs.gov/nwis/uv/?site_no=15908000
 # https://nwis.waterdata.usgs.gov/usa/nwis/uv/?cb_00060=on&format=rdb&site_no=15908000&period=&begin_date=2001-01-01&end_date=2018-09-01
+
 sagdisch <- read.csv("Data/SagDischargeDaily_2001-2018.csv", header = TRUE) %>%
   mutate(datetime = as.POSIXct(paste0(date, " ", time), format = "%m/%d/%Y %H:%M"),
          Date = as_date(datetime),
@@ -86,7 +82,8 @@ catchenviron <- catchenviron %>%
   mutate(biweekly = ifelse(day.of.year <= 196, 1, 
                            ifelse(day.of.year > 196 & day.of.year <= 213, 2, #btwn July 15 and Aug 1
                                   ifelse(day.of.year > 213 & day.of.year <= 227, 3, #Aug 1 - 15
-                                         ifelse(day.of.year > 227, 4, NA))))) # after Aug 15
+                                         ifelse(day.of.year > 227, 4, NA))))) %>% # after Aug 15 
+  filter(Station != 231)
 
 ###################################
 # Join All Environmental Data
@@ -96,7 +93,7 @@ catchenviron <- catchenviron %>%
 # The only tricky thing done is that I converted wind from degrees (0-360) to East-West using trig,
 # before this I took the mean using circular averaging. Salin & temp are from midwater sampling
 pru.env.ann <- catchenviron %>% dplyr::distinct(Year, Station) %>% arrange(Year, Station) %>%
-  #the above section creates a dataframe of year/station combos. Need to decide what to do about Stn 231
+  #the above section creates a dataframe of year/station combos
   left_join(deadhorsewind %>% mutate(Year = year(Date)) %>% group_by(Year) %>% 
               summarise(annwindspeed_kph = mean(dailymeanspeed_kph, na.rm = TRUE),
                         annwinddir = ((circ.mean(2*pi*na.omit(dailymeandir)/360))*(360 / (2*pi))) %%360 ),
@@ -114,7 +111,7 @@ pru.env.ann <- catchenviron %>% dplyr::distinct(Year, Station) %>% arrange(Year,
 
 #create similar setup on a daily scale
 pru.env.day <- catchenviron %>% dplyr::distinct(EndDate, Station) %>% 
-  mutate(Station=replace(Station, Station==231, 214)) %>% arrange(EndDate, Station) %>% 
+  arrange(EndDate, Station) %>% 
   left_join(deadhorsewind %>% dplyr::select(-month), by = c("EndDate" = "Date")) %>%
   left_join(sagdisch, by = c("EndDate" = "Date")) %>%
   left_join(watersalin %>% dplyr::select(Date, Station, Salin_Top, Salin_Mid), 
@@ -138,7 +135,7 @@ pru.env.biwk <- pru.env.day %>%
                                                 ifelse(day.of.year > 227, 4, NA))))) ) %>% # after Aug 15
   group_by(Year, biweekly, Station) %>%
   summarise(biwkmeanspeed_kph = mean(dailymeanspeed_kph, na.rm = TRUE),
-            biwkmeandir =  ((circ.mean(2*pi*na.omit(dailymeandir)/360))*(360 / (2*pi))) %%360,
+            biwkmeandir = ((circ.mean(2*pi*na.omit(dailymeandir)/360))*(360 / (2*pi))) %%360,
             meandisch_cfs = mean(meandisch_cfs , na.rm=TRUE),
             Salin_Top = mean(Salin_Top, na.rm=TRUE),
             Salin_Mid = mean(Salin_Mid, na.rm=TRUE),
@@ -148,33 +145,25 @@ pru.env.biwk <- pru.env.day %>%
 
 
 
-
-
 #############################
 ### Catch Data
 
 # now turn catch data into a 'wide' catch matrix (Species by Year/Station)
 # drop enivron data too, just focusing on catch here
 catchmatrix.all <- catchenviron %>% group_by(Year, Station, Species) %>% summarise(anncount = sum(totcount)) %>%
-  spread(Species, value = anncount) %>% replace(., is.na(.), 0) %>% ungroup()
-catchmatrix.all$Station[catchmatrix.all$Station == 231] <- 214 # Treat the 231 Station as the precursor to 214
-catchmatrix.all <- catchmatrix.all %>% arrange(Year, Station) #was out of order in 2001 after station name change
+  spread(Species, value = anncount) %>% replace(., is.na(.), 0) %>% ungroup() #Make sure to replace NAs with 0
+catchmatrix.all <- catchmatrix.all %>% arrange(Year, Station) # Just to double check order is correct
 
 catchmatrix.day <- catchenviron %>% group_by(EndDate, Station, Species) %>% summarise(count = sum(totcount)) %>%
   spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
-catchmatrix.day$Station[catchmatrix.day$Station == 231] <- 214 # Treat the 231 Station as the precursor to 214
-catchmatrix.day <- catchmatrix.day %>% arrange(EndDate, Station) #was out of order in 2001 after station name change
+catchmatrix.day <- catchmatrix.day %>% arrange(EndDate, Station) # Just to double check order is correct
 
 catchmatrix.biwk <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
   spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
-catchmatrix.biwk$Station[catchmatrix.biwk$Station == 231] <- 214 # Treat the 231 Station as the precursor to 214
-catchmatrix.biwk <- catchmatrix.biwk %>% arrange(Year, biweekly, Station) #was out of order in 2001 after station name change
+catchmatrix.biwk <- catchmatrix.biwk %>% arrange(Year, biweekly, Station) # Just to double check order is correct
 
 
 # Exclude rare species:
-# catchmatrix$Station <- as.numeric(catchmatrix$Station) #cheat to include it in shortcut
-# catchmatrix <- catchmatrix[, which(colSums(catchmatrix) > 100)] 
-
 # Right now analysis is for only species >100 fish, all years combined. Change 100 to 0 to inc all spp
 # the following code makes a list of the species to keep which have a threshold of 100 currently,
 # then filters based on this list, then turns back into wide format
@@ -187,13 +176,13 @@ catchmatrix.day <- catchmatrix.day %>% gather(Species, counts, -EndDate, -Statio
 catchmatrix.biwk <- catchmatrix.biwk %>% gather(Species, counts, -Year, -biweekly, -Station) %>% filter(Species %in% keepspp) %>%
   spread(Species, value = counts)
 
-
-rownames(catchmatrix) <- paste0(catchmatrix$Year, catchmatrix$Station)
-rownames(catchmatrix.day) <- paste0(year(catchmatrix.day$EndDate), yday(catchmatrix.day$EndDate), catchmatrix.day$Station)
+# Add row names for ease of checking later
+rownames(catchmatrix)      <- paste0(catchmatrix$Year, catchmatrix$Station)
+rownames(catchmatrix.day)  <- paste0(year(catchmatrix.day$EndDate), yday(catchmatrix.day$EndDate), catchmatrix.day$Station)
 rownames(catchmatrix.biwk) <- paste0(catchmatrix.biwk$Year, catchmatrix.biwk$biweekly, catchmatrix.biwk$Station)
 
 
-
+# Delete the Year & Stn cols (can't be present for PERMANOVA)
 #pru.env.ann <- catchmatrix %>% dplyr::select(Year, Station)
 catchmatrix <- catchmatrix %>% dplyr::select(-Year, -Station)
 catchmatrix.all <- catchmatrix.all %>% dplyr::select(-Year, -Station)
@@ -202,7 +191,7 @@ catchmatrix.biwk <- catchmatrix.biwk %>% dplyr::select(-Year, -biweekly, -Statio
 
 
 # standardize catches 0 to 1 (1 is max catch in a given year/station)
-#note that the order corresponds to the now deleted Year/station combo. DON'T CHANGE ORDER
+# note that the order corresponds to the now deleted Year/station combo. DON'T CHANGE ORDER
 catchmatrix.std <- catchmatrix 
 for (i in 1:ncol(catchmatrix.std)){ #make sure year/stn cols already dropped
   catchmatrix.std[i] <- catchmatrix[i]/max(catchmatrix[i])}
@@ -218,6 +207,10 @@ for (i in 1:ncol(catchmatrix.biwk.stdtrans)){ #starts at 3 to exclude Year and s
 
 # make sure that 'catchmatrix' and catchmatrix.std are both set up in same order as pru.env.ann
 #hist(catchmatrix.biwk.stdtrans$ARCS)
+
+
+
+
 
 
 ##########################################
