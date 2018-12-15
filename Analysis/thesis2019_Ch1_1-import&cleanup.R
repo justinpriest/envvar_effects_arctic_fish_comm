@@ -21,6 +21,9 @@ library(CircStats)
 # Read in the length, catch, and environmental data, plus species lookup table
 load("Data/PrudhoeCatch&LengthDataset_2001-2018_Version11.Rdata")
 
+#Will need this later
+all.len <- all.len %>% mutate(Net = paste0(Station, Side))
+
 # Clean up dataframes
 allcatch <- allcatch %>% mutate(Net = factor(Net), Station = factor(substr(Net, 1, 3)))
 env_allyears <- env_allyears %>% mutate(Station = factor(Station))
@@ -207,6 +210,39 @@ for (i in 1:ncol(catchmatrix.biwk.stdtrans)){ #starts at 3 to exclude Year and s
 
 # make sure that 'catchmatrix' and catchmatrix.std are both set up in same order as pru.env.ann
 #hist(catchmatrix.biwk.stdtrans$ARCS)
+
+
+
+###########################
+##### EFFORT #####
+###########################
+
+
+effort <- full_join(all.len %>%
+                      distinct(EndDate, Net), 
+                    allcatch %>% distinct(EndDate, Net), 
+                    by = c("EndDate", "Net")) %>% 
+  left_join(all.len %>%
+              dplyr::select(EndDate, Net, StartDateTime, EndDateTime), 
+            by = c("EndDate", "Net")) %>% 
+  distinct(EndDate, Net, StartDateTime, EndDateTime) %>%
+  #this first mutate MANUALLY adds in skipped dates
+  mutate(StartDateTime=replace(StartDateTime, EndDate=="2018-07-10" & Net == "230N", 
+                               as.POSIXct("2018-07-09 09:25")), 
+         EndDateTime=replace(EndDateTime, EndDate=="2018-07-10" & Net == "230N", 
+                             as.POSIXct("2018-07-10 08:55")), 
+         
+         StartDateTime=replace(StartDateTime, EndDate=="2018-07-24" & Net == "220W", 
+                               as.POSIXct("2018-07-23 09:15")), 
+         EndDateTime=replace(EndDateTime, EndDate=="2018-07-24" & Net == "220W", 
+                             as.POSIXct("2018-07-24 14:45"))) %>% 
+  mutate(Year = year(EndDate),
+         Effort_NetHrs = as.numeric(EndDateTime - StartDateTime)) %>%
+  arrange(EndDate, Net)
+# A few NAs occur when we have catch but no lengths for that day 
+# (because the times are recorded in the length dataframe!)
+# So run this and manually check for any NAs in the current year
+
 
 
 

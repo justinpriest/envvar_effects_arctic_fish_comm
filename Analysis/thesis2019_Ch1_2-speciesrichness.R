@@ -83,6 +83,81 @@ subset(dredge(fullmodel1), delta < 4)
 
 
 
+# Does Species Richness increase over the season? 
+
+# This function adds the day of year column (if not already present), and then the weeknumber
+addweeknum <- function(dataframename){
+  dataframename <- dataframename %>% 
+    mutate(day.of.year = yday(EndDate),
+           week = ifelse(day.of.year <= 187, 1, 
+                         ifelse(day.of.year > 187 & day.of.year <= 194, 2, 
+                                ifelse(day.of.year > 194 & day.of.year <= 201, 3, 
+                                       ifelse(day.of.year > 201 & day.of.year <= 208, 4, 
+                                              ifelse(day.of.year > 208 & day.of.year <= 215, 5,
+                                                     ifelse(day.of.year > 215 & day.of.year <= 222, 6,
+                                                            ifelse(day.of.year > 222 & day.of.year <= 229, 7,
+                                                                   ifelse(day.of.year > 229 & day.of.year <= 236, 8,
+                                                                          ifelse(day.of.year > 236, 9, NA))))))))))
+  
+}
+
+
+spp_richness.wk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Station != 231) 
+spp_richness.wk <- addweeknum(spp_richness.wk) %>% group_by(Year, week) %>% summarise(num_spp = n_distinct(Species)) 
+
+
+effort.wk <- effort %>% filter(Station != 231) %>% mutate(Station = substr(Net, 1, 3))
+effort.wk <- addweeknum(effort.wk) %>% 
+  group_by(Year, week) %>% summarise(weekeffort = sum(Effort_NetHrs, na.rm = TRUE)) %>%
+  mutate(sample_proportion = weekeffort / (48*4*7)) #1344 is 4 nets with two cod ends, fishing 24/7 (7*24*4*2)
+  # sample_proportion is the amount of sampling relative to 100% coverage (but can be slightly higher than 100%)
+  
+
+spp_richness.wk <- spp_richness.wk %>% left_join(effort.wk %>% dplyr::select(week, sample_proportion), 
+                                                 by = c("Year" = "Year", "week" = "week")) %>%
+  mutate(num_spp_adj = num_spp * sample_proportion)
 
 
 
+ggplot(data = spp_richness.wk, aes(x=week, y = num_spp_adj, group=Year, color=Year)) + 
+  geom_line() +
+  geom_point() +
+  scale_color_viridis() + theme_bw() 
+
+
+
+summary(lm(num_spp ~ week + (Year), data=spp_richness.wk)) 
+
+
+temp <- addweeknum(pru.env.day) %>%
+  group_by(Year, week) %>% summarise(meansal = mean(Salin_Mid, na.rm = TRUE))
+
+
+ggplot(data = temp, aes(x=week, y = meansal, group=Year, color=Year)) + 
+  geom_smooth(method = "loess", se=FALSE, span=1.25)
+
+
+
+
+
+install.packages("stringi")
+devtools::install_github("thomasp85/gganimate")
+
+
+
+
+library(gganimate)
+aes(x = gdpPercap, y = lifeExp, 
+    size = pop, color = continent,
+    frame = year)
+
+
+
+mapping <- aes(x = gdpPercap, y = lifeExp, 
+               size = pop, color = continent,
+               frame = year) 
+p <- ggplot(gapminder, mapping = mapping) +
+  geom_point() +
+  scale_x_log10()
+# Animate
+gganimate(p)
