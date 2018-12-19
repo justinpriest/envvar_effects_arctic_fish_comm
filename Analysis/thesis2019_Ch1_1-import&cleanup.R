@@ -237,8 +237,9 @@ effort <- full_join(all.len %>%
          EndDateTime=replace(EndDateTime, EndDate=="2018-07-24" & Net == "220W", 
                              as.POSIXct("2018-07-24 14:45"))) %>% 
   mutate(Year = year(EndDate),
-         Effort_NetHrs = as.numeric(EndDateTime - StartDateTime)) %>%
-  arrange(EndDate, Net)
+         Effort_NetHrs = as.numeric(EndDateTime - StartDateTime),
+         Station = substr(Net, 1,3)) %>%
+  arrange(EndDate, Net, Station)
 # A few NAs occur when we have catch but no lengths for that day 
 # (because the times are recorded in the length dataframe!)
 # So run this and manually check for any NAs in the current year
