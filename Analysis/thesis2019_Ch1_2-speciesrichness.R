@@ -106,8 +106,7 @@ spp_richness.wk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & S
 spp_richness.wk <- addweeknum(spp_richness.wk) %>% group_by(Year, week) %>% summarise(num_spp = n_distinct(Species)) 
 
 
-effort.wk <- effort %>% filter(Station != 231) %>% mutate(Station = substr(Net, 1, 3))
-effort.wk <- addweeknum(effort.wk) %>% 
+effort.wk <- addweeknum(effort.wk) %>% filter(Station != 231) %>%  
   group_by(Year, week) %>% summarise(weekeffort = sum(Effort_NetHrs, na.rm = TRUE)) %>%
   mutate(sample_proportion = weekeffort / (48*4*7)) #1344 is 4 nets with two cod ends, fishing 24/7 (7*24*4*2)
   # sample_proportion is the amount of sampling relative to 100% coverage (but can be slightly higher than 100%)
@@ -141,23 +140,45 @@ ggplot(data = temp, aes(x=week, y = meansal, group=Year, color=Year)) +
 
 
 install.packages("stringi")
-devtools::install_github("thomasp85/gganimate")
 
 
 
 
-library(gganimate)
-aes(x = gdpPercap, y = lifeExp, 
-    size = pop, color = continent,
-    frame = year)
 
 
+library(gganimate) # devtools::install_github("thomasp85/gganimate")
+library(gifski)
+library(transformr)
+# these each take about 30 seconds to create. Only use for presentations
+richnessgif <- ggplot(spp_richness.wk, mapping = aes(x = week, y = num_spp_adj, color = Year)) +
+  #geom_line() + geom_point() +
+  geom_smooth(method = "loess", se=FALSE, size = 2, span=1.25) +
+  scale_color_viridis() + theme_bw() +
+  transition_states(Year, transition_length=1.5) +
+  shadow_mark(size = 1, colour = 'grey') +
+  ease_aes('linear') + 
+  labs(title = 'Species Richness - Year: {closest_state}') + ylab("Weekly Species Richness")
 
-mapping <- aes(x = gdpPercap, y = lifeExp, 
-               size = pop, color = continent,
-               frame = year) 
-p <- ggplot(gapminder, mapping = mapping) +
-  geom_point() +
-  scale_x_log10()
-# Animate
-gganimate(p)
+salinitygif <- ggplot(data = temp, mapping = aes(x=week, y = meansal, color=Year)) + 
+  geom_smooth(method = "loess", se=FALSE, size=2, span=1.25) +
+  scale_color_viridis() + theme_bw() +
+  transition_states(Year, transition_length=1.5) +
+  shadow_mark(size = 1, colour = 'grey') +
+  ease_aes('linear') + 
+  labs(title = 'Salinity - Year: {closest_state}') + ylab("Weekly Mean Salinity")
+
+# You can visually see that the patterns between the two of them are very similar
+
+
+# Create side by side. I turned this off because it takes a while
+# Guide: https://github.com/thomasp85/gganimate/wiki/Animation-Composition
+# library(magick) # You need imagemagick installed
+# richnessgif <- image_read(animate(richnessgif + theme(legend.position="none"), width = 300, height = 300))
+# salinitygif <- image_read(animate(salinitygif, width = 300, height = 300))
+# 
+# combined_gif <- image_append(c(richnessgif[1], salinitygif[1]))
+# for(i in 2:100){
+#   combined <- image_append(c(richnessgif[i], salinitygif[i]))
+#   combined_gif <- c(combined_gif, combined)
+# }
+# combined_gif
