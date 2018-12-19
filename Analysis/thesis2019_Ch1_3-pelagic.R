@@ -22,9 +22,10 @@ spplookup <- spplookup %>% mutate(pelagic_benth = if_else(familygroup == "Cottid
                                              Species == "RKGL" | Species == "WSGL", "pelagic")) 
   
 
-temp <- left_join(allcatch, spplookup %>% dplyr::select(-commonname, - familygroup), 
+benthpelag <- left_join(allcatch, spplookup %>% dplyr::select(-commonname, - familygroup), 
           by = c("Species" = "Species")) %>% 
   group_by(Year, pelagic_benth) %>% summarise(anncatch = sum(totcount))
 
 
-ggplot(data = temp, aes(x=Year, y = anncatch, color = pelagic_benth)) + geom_line()
+ggplot(data = benthpelag, aes(x=Year, y = anncatch, color = pelagic_benth)) + geom_line()
+ggplot(data = benthpelag %>% filter(pelagic_benth=="benthic"), aes(x=Year, y = anncatch)) + geom_line()

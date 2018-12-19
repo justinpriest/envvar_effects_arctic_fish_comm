@@ -128,18 +128,11 @@ ggplot(data = spp_richness.wk, aes(x=week, y = num_spp_adj, group=Year, color=Ye
 summary(lm(num_spp ~ week + (Year), data=spp_richness.wk)) 
 
 
-temp <- addweeknum(pru.env.day) %>%
-  group_by(Year, week) %>% summarise(meansal = mean(Salin_Mid, na.rm = TRUE))
 
 
 ggplot(data = temp, aes(x=week, y = meansal, group=Year, color=Year)) + 
   geom_smooth(method = "loess", se=FALSE, span=1.25)
 
-
-
-
-
-install.packages("stringi")
 
 
 
@@ -150,17 +143,21 @@ library(gganimate) # devtools::install_github("thomasp85/gganimate")
 library(gifski)
 library(transformr)
 # these each take about 30 seconds to create. Only use for presentations
-richnessgif <- ggplot(spp_richness.wk, mapping = aes(x = week, y = num_spp_adj, color = Year)) +
+richnessgif <- ggplot(spp_richness.wk, mapping = aes(x = week, y = num_spp_adj, group = Year, color = Year)) +
   #geom_line() + geom_point() +
   geom_smooth(method = "loess", se=FALSE, size = 2, span=1.25) +
+  scale_x_continuous(breaks = 1:9) +
   scale_color_viridis() + theme_bw() +
   transition_states(Year, transition_length=1.5) +
-  shadow_mark(size = 1, colour = 'grey') +
-  ease_aes('linear') + 
+  shadow_mark(size = 1, colour = 'grey') + ease_aes('linear') + 
   labs(title = 'Species Richness - Year: {closest_state}') + ylab("Weekly Species Richness")
 
-salinitygif <- ggplot(data = temp, mapping = aes(x=week, y = meansal, color=Year)) + 
+weeklysalinity <- addweeknum(pru.env.day) %>%
+  group_by(Year, week) %>% summarise(meansal = mean(Salin_Mid, na.rm = TRUE))
+
+salinitygif <- ggplot(data = weeklysalinity, mapping = aes(x=week, y = meansal, color=Year)) + 
   geom_smooth(method = "loess", se=FALSE, size=2, span=1.25) +
+  scale_x_continuous(breaks = 1:9) +
   scale_color_viridis() + theme_bw() +
   transition_states(Year, transition_length=1.5) +
   shadow_mark(size = 1, colour = 'grey') +
