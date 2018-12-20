@@ -1,5 +1,7 @@
 # Script to run PERMANOVA models and analysis
 
+# This was done at on an annual and a biweekly scale
+# There are two sections, first Section 1 looks at 
 
 library(dplyr)
 library(tidyr)

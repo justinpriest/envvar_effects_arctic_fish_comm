@@ -2,14 +2,14 @@
 
 #################
 ### Assess nature of observed changes: linear trend, nonlinear trend, structural break
+
 #################
 
 library(mgcv)
 library(strucchange)
-
+library(ggsidekick) #devtools::install_github("seananderson/ggsidekick")
 
 source("Analysis/thesis2019_Ch1_4-PERMANOVA.R")
-
 
 
 summary(lm(MDS1 ~ Year, data = nmdspoints.biwk)) # marginal
