@@ -1,3 +1,5 @@
+# CHANGES IN COMMUNITY STRUCTURE
+
 # Script to run PERMANOVA models and analysis
 
 # This was done at on an annual and a biweekly scale
@@ -5,6 +7,7 @@
 
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 library(vegan)
 library(RColorBrewer)
 library(broom)
@@ -57,7 +60,11 @@ text(totalNMDS, select=which(pru.env.ann$Station==220), col="black")
 text(totalNMDS, select=which(pru.env.ann$Station==230), col="green")
 #pretty distinct groupings by site
 
-
+# From Franz: See how species are associated with sites
+totalNMDS_raw <- metaMDS(catchmatrix.std, k=3)
+plot(totalNMDS_raw$points, asp=1, pch=16, col=factor(pru.env.ann$Station))
+text(totalNMDS_raw, display = "species", col=2)
+# GRAY/RDWF assoc. w/ 230, DLVN w/ 214, PINK/PCHG/SFCD w/ 218 and CAPE/HBWF/LSCS w/ 220
 
 
 nmdspoints <- as.data.frame(totalNMDS$points[1:71,]) # 71 is the num. year/stn combos (4 stns, 18 yrs (no 231 in 2001))
@@ -84,7 +91,6 @@ ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), cex=5) 
 
 
 
-
 mypal  <- colorRampPalette(brewer.pal(6, "Greens"))
 mypal2 <- colorRampPalette(brewer.pal(6, "Greys"))
 mypal3 <- colorRampPalette(brewer.pal(6, "Blues"))
@@ -95,6 +101,7 @@ ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point() +
   #scale_color_continuous(low = "#3fdeff", high = "#144f5b") +
   scale_colour_manual(values = c(mypal(18), mypal2(18), mypal3(18), mypal4(18))) +
   theme(legend.position = "none")
+
 
 
 ##########################
@@ -115,6 +122,9 @@ nmdspoints %>% group_by(Station) %>% do(model = lm(MDS2 ~ Year, data = .)) %>%
 ggplot(nmdspoints, aes(x=Year, y =MDS1, color = Station)) + 
   geom_point() + geom_smooth(method = "lm", se=FALSE)
 
+# From Franz: "Axis 3 shows a very strong time trend and the trend is very consistent among the 4 sites"
+ggplot(nmdspoints, aes(x=Year, y = MDS3, color = Station)) + 
+  geom_point() + geom_smooth(se=FALSE)
 
 
 ######### BIWEEKLY
@@ -146,7 +156,7 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=biweekly), c
 # CORRELATIONS
 Spp.cor <- data.frame(Species = as.character(""), MDS1.corr = as.numeric(0), 
                       MDS2.corr = as.numeric(0),  MDS3.corr = as.numeric(0),
-                      stringsAsFactors = FALSE)
+                      stringsAsFactors = FALSE) # set up blank data frame
 j = 1
 for(i in colnames(catchmatrix.biwk.stdtrans)){
   .sppcor <- catchmatrix.biwk.stdtrans %>% gather(Species, abund) %>% filter(Species == i)
@@ -171,6 +181,7 @@ ggplot(Spp.cor) +
                        high = muted("cornflowerblue"), 
                        midpoint = 0) +
   labs(x = "", fill="Corr Coef")
+
 
 
 
@@ -263,6 +274,8 @@ adonis(catchmatrix.std ~ annsal_ppt + annwinddir_ew + annwindspeed_kph +
 adonis(braydist ~ Year + Station, data = pru.env.ann, perm = 9999)
 
 
+
+
 ######
 ## BIWEEKLY PERMANOVA ##
 
@@ -281,6 +294,12 @@ betad.biwk <- betadiver(catchmatrix.biwk.stdtrans.sub , "z")
 adonis(betad.biwk ~ Temp_Top + Salin_Top + winddir_ew + meandisch_cfs + Year + Station + biweekly, pru.env.biwk.std, perm=999) 
 #winddir slightly better than speed. Temp signif if added first, but mostly captured by salin
 # nonenviron explan var (Year, Stn, biweekly) are highly significant, esp seasonality (biweekly)
+# But Franz recommends using the Bray-Curtis dissimilarity matrix
+adonis2(catchmatrix.biwk.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + winddir_ew + Year + Station + biweekly, 
+        pru.env.biwk.std, perm=999, by = "margin") 
+# Seasonality, 
+
+
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Year), main = "Biweekly")
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$biweekly), main = "Biweekly")

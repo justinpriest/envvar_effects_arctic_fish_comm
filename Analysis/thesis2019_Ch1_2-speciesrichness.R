@@ -5,7 +5,6 @@
 # This is the first chunk of modeling after the script import. 
 
 
-
 library(ggplot2)
 library(viridis)
 library(MuMIn)
@@ -82,7 +81,7 @@ subset(dredge(fullmodel1), delta < 4)
 # temp + wind speed is decent. 
 
 
-
+#######################
 # Does Species Richness increase over the season? 
 
 # This function adds the day of year column (if not already present), and then the weeknumber
@@ -106,7 +105,7 @@ spp_richness.wk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & S
 spp_richness.wk <- addweeknum(spp_richness.wk) %>% group_by(Year, week) %>% summarise(num_spp = n_distinct(Species)) 
 
 
-effort.wk <- addweeknum(effort.wk) %>% filter(Station != 231) %>%  
+effort.wk <- addweeknum(effort) %>% filter(Station != 231) %>%  
   group_by(Year, week) %>% summarise(weekeffort = sum(Effort_NetHrs, na.rm = TRUE)) %>%
   mutate(sample_proportion = weekeffort / (48*4*7)) #1344 is 4 nets with two cod ends, fishing 24/7 (7*24*4*2)
   # sample_proportion is the amount of sampling relative to 100% coverage (but can be slightly higher than 100%)
@@ -124,15 +123,14 @@ ggplot(data = spp_richness.wk, aes(x=week, y = num_spp_adj, group=Year, color=Ye
   scale_color_viridis() + theme_bw() 
 
 
-
 summary(lm(num_spp ~ week + (Year), data=spp_richness.wk)) 
 
 
-
-
-ggplot(data = temp, aes(x=week, y = meansal, group=Year, color=Year)) + 
+temp <- 
+ggplot(data = addweeknum(pru.env.day) %>%
+         group_by(Year, week) %>% summarise(meansal = mean(Salin_Mid, na.rm = TRUE)), 
+       aes(x=week, y = meansal, group=Year, color=Year)) + 
   geom_smooth(method = "loess", se=FALSE, span=1.25)
-
 
 
 
@@ -167,7 +165,7 @@ salinitygif <- ggplot(data = weeklysalinity, mapping = aes(x=week, y = meansal, 
 # You can visually see that the patterns between the two of them are very similar
 
 
-# Create side by side. I turned this off because it takes a while
+# Create side by side. I turned this off because it takes a while to run 
 # Guide: https://github.com/thomasp85/gganimate/wiki/Animation-Composition
 # library(magick) # You need imagemagick installed
 # richnessgif <- image_read(animate(richnessgif + theme(legend.position="none"), width = 300, height = 300))

@@ -1,4 +1,4 @@
-# nMDS Time Series
+# COMMUNITY CHANGES IN TIME SERIES 
 
 #################
 ### Assess nature of observed changes: linear trend, nonlinear trend, structural break
