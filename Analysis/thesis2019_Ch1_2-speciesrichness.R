@@ -84,21 +84,8 @@ subset(dredge(fullmodel1), delta < 4)
 #######################
 # Does Species Richness increase over the season? 
 
-# This function adds the day of year column (if not already present), and then the weeknumber
-addweeknum <- function(dataframename){
-  dataframename <- dataframename %>% 
-    mutate(day.of.year = yday(EndDate),
-           week = ifelse(day.of.year <= 187, 1, 
-                         ifelse(day.of.year > 187 & day.of.year <= 194, 2, 
-                                ifelse(day.of.year > 194 & day.of.year <= 201, 3, 
-                                       ifelse(day.of.year > 201 & day.of.year <= 208, 4, 
-                                              ifelse(day.of.year > 208 & day.of.year <= 215, 5,
-                                                     ifelse(day.of.year > 215 & day.of.year <= 222, 6,
-                                                            ifelse(day.of.year > 222 & day.of.year <= 229, 7,
-                                                                   ifelse(day.of.year > 229 & day.of.year <= 236, 8,
-                                                                          ifelse(day.of.year > 236, 9, NA))))))))))
-  
-}
+# The next section will use the function addweeknum() will adds day of year and weeknumber columns
+
 
 
 spp_richness.wk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Station != 231) 
@@ -126,10 +113,9 @@ ggplot(data = spp_richness.wk, aes(x=week, y = num_spp_adj, group=Year, color=Ye
 summary(lm(num_spp ~ week + (Year), data=spp_richness.wk)) 
 
 
-temp <- 
-ggplot(data = addweeknum(pru.env.day) %>%
-         group_by(Year, week) %>% summarise(meansal = mean(Salin_Mid, na.rm = TRUE)), 
-       aes(x=week, y = meansal, group=Year, color=Year)) + 
+
+ggplot(addweeknum(pru.env.day) %>% group_by(Year, week) %>% summarise(meansal=mean(Salin_Mid, na.rm = TRUE)), 
+       aes(x = week, y = meansal, group = Year, color = Year)) + 
   geom_smooth(method = "loess", se=FALSE, span=1.25)
 
 

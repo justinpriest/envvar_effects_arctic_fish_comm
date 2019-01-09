@@ -148,70 +148,6 @@ pru.env.biwk <- pru.env.day %>%
 
 
 
-#############################
-### Catch Data
-
-# now turn catch data into a 'wide' catch matrix (Species by Year/Station)
-# drop enivron data too, just focusing on catch here
-catchmatrix.all <- catchenviron %>% group_by(Year, Station, Species) %>% summarise(anncount = sum(totcount)) %>%
-  spread(Species, value = anncount) %>% replace(., is.na(.), 0) %>% ungroup() #Make sure to replace NAs with 0
-catchmatrix.all <- catchmatrix.all %>% arrange(Year, Station) # Just to double check order is correct
-
-catchmatrix.day <- catchenviron %>% group_by(EndDate, Station, Species) %>% summarise(count = sum(totcount)) %>%
-  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
-catchmatrix.day <- catchmatrix.day %>% arrange(EndDate, Station) # Just to double check order is correct
-
-catchmatrix.biwk <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
-  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
-catchmatrix.biwk <- catchmatrix.biwk %>% arrange(Year, biweekly, Station) # Just to double check order is correct
-
-
-# Exclude rare species:
-# Right now analysis is for only species >100 fish, all years combined. Change 100 to 0 to inc all spp
-# the following code makes a list of the species to keep which have a threshold of 100 currently,
-# then filters based on this list, then turns back into wide format
-keepspp <- (catchmatrix.all %>% gather(Species, counts, -Year, -Station) %>%
-              group_by(Species) %>% summarize(counts = sum(counts)) %>% filter(counts > 100))$Species
-catchmatrix <- catchmatrix.all %>% gather(Species, counts, -Year, -Station) %>% filter(Species %in% keepspp) %>%
-  spread(Species, value = counts)
-catchmatrix.day <- catchmatrix.day %>% gather(Species, counts, -EndDate, -Station) %>% filter(Species %in% keepspp) %>%
-  spread(Species, value = counts)
-catchmatrix.biwk <- catchmatrix.biwk %>% gather(Species, counts, -Year, -biweekly, -Station) %>% filter(Species %in% keepspp) %>%
-  spread(Species, value = counts)
-
-# Add row names for ease of checking later
-rownames(catchmatrix)      <- paste0(catchmatrix$Year, catchmatrix$Station)
-rownames(catchmatrix.day)  <- paste0(year(catchmatrix.day$EndDate), yday(catchmatrix.day$EndDate), catchmatrix.day$Station)
-rownames(catchmatrix.biwk) <- paste0(catchmatrix.biwk$Year, catchmatrix.biwk$biweekly, catchmatrix.biwk$Station)
-
-
-# Delete the Year & Stn cols (can't be present for PERMANOVA)
-#pru.env.ann <- catchmatrix %>% dplyr::select(Year, Station)
-catchmatrix <- catchmatrix %>% dplyr::select(-Year, -Station)
-catchmatrix.all <- catchmatrix.all %>% dplyr::select(-Year, -Station)
-catchmatrix.day <- catchmatrix.day %>% dplyr::select(-EndDate, -Station)
-catchmatrix.biwk <- catchmatrix.biwk %>% dplyr::select(-Year, -biweekly, -Station)
-
-
-# standardize catches 0 to 1 (1 is max catch in a given year/station)
-# note that the order corresponds to the now deleted Year/station combo. DON'T CHANGE ORDER
-catchmatrix.std <- catchmatrix 
-for (i in 1:ncol(catchmatrix.std)){ #make sure year/stn cols already dropped
-  catchmatrix.std[i] <- catchmatrix[i]/max(catchmatrix[i])}
-
-catchmatrix.day.std <- catchmatrix.day
-for (i in 1:ncol(catchmatrix.day.std)){ #starts at 3 to exclude Year and station cols
-  catchmatrix.day.std[i] <- catchmatrix.day[i]/max(catchmatrix.day[i])}
-
-catchmatrix.biwk.stdtrans <- catchmatrix.biwk
-for (i in 1:ncol(catchmatrix.biwk.stdtrans)){ #starts at 3 to exclude Year and station cols
-  catchmatrix.biwk.stdtrans[i] <- (catchmatrix.biwk[i]^0.25)/max((catchmatrix.biwk[i]^0.25))}
-#using 4th root tranform
-
-# make sure that 'catchmatrix' and catchmatrix.std are both set up in same order as pru.env.ann
-#hist(catchmatrix.biwk.stdtrans$ARCS)
-
-
 
 ###########################
 ##### EFFORT #####
@@ -242,7 +178,129 @@ effort <- full_join(all.len %>%
   arrange(EndDate, Net, Station)
 # A few NAs occur when we have catch but no lengths for that day 
 # (because the times are recorded in the length dataframe!)
-# So run this and manually check for any NAs in the current year
+
+
+
+# This function adds the day of year column (if not already present), and then the weeknumber
+addweeknum <- function(dataframename){
+  dataframename <- dataframename %>% 
+    mutate(day.of.year = yday(EndDate),
+           week = ifelse(day.of.year <= 187, 1, 
+                         ifelse(day.of.year > 187 & day.of.year <= 194, 2, 
+                                ifelse(day.of.year > 194 & day.of.year <= 201, 3, 
+                                       ifelse(day.of.year > 201 & day.of.year <= 208, 4, 
+                                              ifelse(day.of.year > 208 & day.of.year <= 215, 5,
+                                                     ifelse(day.of.year > 215 & day.of.year <= 222, 6,
+                                                            ifelse(day.of.year > 222 & day.of.year <= 229, 7,
+                                                                   ifelse(day.of.year > 229 & day.of.year <= 236, 8,
+                                                                          ifelse(day.of.year > 236, 9, NA))))))))))
+  
+}
+
+effort.wk <- addweeknum(effort) %>% group_by(Year, Net, Station, week) %>% 
+  summarise(Effort_NetHrs = sum(Effort_NetHrs))
+
+effort.biwk <- effort %>% mutate(day.of.year = yday(EndDate),
+  biweekly = ifelse(day.of.year <= 196, 1, 
+                         ifelse(day.of.year > 196 & day.of.year <= 213, 2, #btwn July 15 and Aug 1
+                                ifelse(day.of.year > 213 & day.of.year <= 227, 3, #Aug 1 - 15
+                                       ifelse(day.of.year > 227, 4, NA))))) %>% # after Aug 15 
+  group_by(Year, biweekly, Station) %>% summarise(Effort_NetHrs = sum(Effort_NetHrs)) 
+
+  
+
+
+
+#############################
+### Catch Data
+#############################
+
+# Next, turn catch data into a 'wide' catch matrix (Species by Year/Station)
+# drop enivron data too, just focusing on catch here
+catchmatrix.all <- catchenviron %>% group_by(Year, Station, Species) %>% summarise(anncount = sum(totcount)) %>%
+  spread(Species, value = anncount) %>% replace(., is.na(.), 0) %>% ungroup() #Make sure to replace NAs with 0
+catchmatrix.all <- catchmatrix.all %>% arrange(Year, Station) # Just to double check order is correct
+
+catchmatrix.day <- catchenviron %>% group_by(EndDate, Station, Species) %>% summarise(count = sum(totcount)) %>%
+  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
+catchmatrix.day <- catchmatrix.day %>% arrange(EndDate, Station) # Just to double check order is correct
+
+catchmatrix.biwk <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
+  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
+catchmatrix.biwk <- catchmatrix.biwk %>% arrange(Year, biweekly, Station) # Just to double check order is correct
+
+
+# Account for varying levels of effort
+
+
+# Exclude rare species:
+# Right now analysis is for only species >100 fish, all years combined. Change 100 to 0 to inc all spp
+# the following code makes a list of the species to keep which have a threshold of 100 currently,
+# then filters based on this list, then turns back into wide format
+keepspp <- (catchmatrix.all %>% gather(Species, counts, -Year, -Station) %>%
+              group_by(Species) %>% summarize(counts = sum(counts)) %>% filter(counts > 100))$Species
+catchmatrix <- catchmatrix.all %>% gather(Species, counts, -Year, -Station) %>% filter(Species %in% keepspp) %>%
+  spread(Species, value = counts)
+catchmatrix.day <- catchmatrix.day %>% gather(Species, counts, -EndDate, -Station) %>% filter(Species %in% keepspp) %>%
+  spread(Species, value = counts)
+catchmatrix.biwk <- catchmatrix.biwk %>% gather(Species, counts, -Year, -biweekly, -Station) %>% filter(Species %in% keepspp) %>%
+  spread(Species, value = counts)
+
+# Add row names for ease of checking later
+rownames(catchmatrix)      <- paste0(catchmatrix$Year, catchmatrix$Station)
+rownames(catchmatrix.day)  <- paste0(year(catchmatrix.day$EndDate), yday(catchmatrix.day$EndDate), catchmatrix.day$Station)
+rownames(catchmatrix.biwk) <- paste0(catchmatrix.biwk$Year, catchmatrix.biwk$biweekly, catchmatrix.biwk$Station)
+
+
+
+
+# Create CPUE dataframe (just for biweekly right now)
+catchmatrix.biwk.cpue <- catchmatrix.biwk %>% gather(Species, catch, -Year, -biweekly, -Station) %>%
+  left_join(effort.biwk, by = c("Year" = "Year", "biweekly" = "biweekly", "Station" = "Station")) %>%
+  mutate(CPUE_biwk = catch/(Effort_NetHrs/(24*2*14))) %>% #This is biweekly CPUE (2 nets fishing 24 hrs/day, for ~14 days)
+  dplyr::select(-catch, -Effort_NetHrs) %>%
+  spread(Species, value = CPUE_biwk)
+
+rownames(catchmatrix.biwk.cpue) <- paste0(catchmatrix.biwk$Year, catchmatrix.biwk$biweekly, catchmatrix.biwk$Station)
+
+
+
+# Delete the Year & Stn cols (can't be present for PERMANOVA)
+#pru.env.ann <- catchmatrix %>% dplyr::select(Year, Station)
+catchmatrix <- catchmatrix %>% dplyr::select(-Year, -Station)
+catchmatrix.all <- catchmatrix.all %>% dplyr::select(-Year, -Station)
+catchmatrix.day <- catchmatrix.day %>% dplyr::select(-EndDate, -Station)
+catchmatrix.biwk <- catchmatrix.biwk %>% dplyr::select(-Year, -biweekly, -Station)
+catchmatrix.biwk.cpue <- catchmatrix.biwk.cpue %>% dplyr::select(-Year, -biweekly, -Station)
+
+# standardize catches 0 to 1 (1 is max catch in a given year/station)
+# note that the order corresponds to the now deleted Year/station combo. DON'T CHANGE ORDER
+catchmatrix.std <- catchmatrix 
+for (i in 1:ncol(catchmatrix.std)){ #make sure year/stn cols already dropped
+  catchmatrix.std[i] <- catchmatrix[i]/max(catchmatrix[i])}
+
+catchmatrix.day.std <- catchmatrix.day
+for (i in 1:ncol(catchmatrix.day.std)){ #make sure year/stn cols already dropped
+  catchmatrix.day.std[i] <- catchmatrix.day[i]/max(catchmatrix.day[i])}
+
+catchmatrix.biwk.stdtrans <- catchmatrix.biwk
+for (i in 1:ncol(catchmatrix.biwk.stdtrans)){ #make sure year/stn cols already dropped
+  catchmatrix.biwk.stdtrans[i] <- (catchmatrix.biwk[i]^0.25)/max((catchmatrix.biwk[i]^0.25))}
+#using 4th root tranform
+
+catchmatrix.biwk.cpue.stdtrans <- catchmatrix.biwk.cpue
+for (i in 1:ncol(catchmatrix.biwk.cpue.stdtrans)){ #make sure year/stn cols already dropped
+  catchmatrix.biwk.cpue.stdtrans[i] <- (catchmatrix.biwk.cpue[i]^0.25)/max((catchmatrix.biwk.cpue[i]^0.25))}
+
+
+(catchmatrix.biwk.cpue[1]^0.25)/max((catchmatrix.biwk.cpue[1]^0.25))
+
+############ STOPPED HERE Jan 8
+# THERE ARE NAs IN THE EFFORT THAT IS THROWING EVERYTHING OFF
+
+
+# make sure that 'catchmatrix' and catchmatrix.std are both set up in same order as pru.env.ann
+#hist(catchmatrix.biwk.stdtrans$ARCS)
 
 
 
