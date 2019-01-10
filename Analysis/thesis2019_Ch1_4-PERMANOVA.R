@@ -283,6 +283,10 @@ adonis(braydist ~ Year + Station, data = pru.env.ann, perm = 9999)
 catchmatrix.biwk.stdtrans.sub <- catchmatrix.biwk.stdtrans[!rowSums(is.na(pru.env.biwk)) >0,]
 pru.env.biwk.sub <- pru.env.biwk[!rowSums(is.na(pru.env.biwk)) >0,]
 
+catchmatrix.biwk.cpue.stdtrans.sub <- catchmatrix.biwk.cpue.stdtrans[!rowSums(is.na(pru.env.biwk)) >0,]
+pru.env.biwk.sub <- pru.env.biwk[!rowSums(is.na(pru.env.biwk)) >0,]
+
+
 pru.env.biwk.std <- pru.env.biwk.sub
 for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
   pru.env.biwk.std[i] <- ((pru.env.biwk.sub[i]+1)^0.5)/max(((pru.env.biwk.sub[i]+1)^0.5))}
@@ -297,7 +301,12 @@ adonis(betad.biwk ~ Temp_Top + Salin_Top + winddir_ew + meandisch_cfs + Year + S
 # But Franz recommends using the Bray-Curtis dissimilarity matrix
 adonis2(catchmatrix.biwk.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + winddir_ew + Year + Station + biweekly, 
         pru.env.biwk.std, perm=999, by = "margin") 
-# Seasonality, 
+# Seasonality, year, and station effects are the main contributors
+
+#check whether CPUE changes anything
+adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + winddir_ew + Year + Station + biweekly, 
+        pru.env.biwk.std, perm=999, by = "margin")
+# same general trends, but the model fits better (resids dropped from 0.54 to 0.51), Stn R2 up
 
 
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")

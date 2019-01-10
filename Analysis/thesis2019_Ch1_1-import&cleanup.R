@@ -198,14 +198,14 @@ addweeknum <- function(dataframename){
 }
 
 effort.wk <- addweeknum(effort) %>% group_by(Year, Net, Station, week) %>% 
-  summarise(Effort_NetHrs = sum(Effort_NetHrs))
+  summarise(Effort_NetHrs = sum(Effort_NetHrs, na.rm = TRUE))
 
 effort.biwk <- effort %>% mutate(day.of.year = yday(EndDate),
   biweekly = ifelse(day.of.year <= 196, 1, 
                          ifelse(day.of.year > 196 & day.of.year <= 213, 2, #btwn July 15 and Aug 1
                                 ifelse(day.of.year > 213 & day.of.year <= 227, 3, #Aug 1 - 15
                                        ifelse(day.of.year > 227, 4, NA))))) %>% # after Aug 15 
-  group_by(Year, biweekly, Station) %>% summarise(Effort_NetHrs = sum(Effort_NetHrs)) 
+  group_by(Year, biweekly, Station) %>% summarise(Effort_NetHrs = sum(Effort_NetHrs, na.rm = TRUE)) 
 
   
 
@@ -292,16 +292,8 @@ catchmatrix.biwk.cpue.stdtrans <- catchmatrix.biwk.cpue
 for (i in 1:ncol(catchmatrix.biwk.cpue.stdtrans)){ #make sure year/stn cols already dropped
   catchmatrix.biwk.cpue.stdtrans[i] <- (catchmatrix.biwk.cpue[i]^0.25)/max((catchmatrix.biwk.cpue[i]^0.25))}
 
-
-(catchmatrix.biwk.cpue[1]^0.25)/max((catchmatrix.biwk.cpue[1]^0.25))
-
-############ STOPPED HERE Jan 8
-# THERE ARE NAs IN THE EFFORT THAT IS THROWING EVERYTHING OFF
-
-
 # make sure that 'catchmatrix' and catchmatrix.std are both set up in same order as pru.env.ann
 #hist(catchmatrix.biwk.stdtrans$ARCS)
-
 
 
 
