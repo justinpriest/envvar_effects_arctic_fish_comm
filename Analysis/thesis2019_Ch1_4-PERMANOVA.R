@@ -21,6 +21,7 @@ source("Analysis/thesis2019_Ch1_1-import&cleanup.R")
 head(catchenviron) # all catch data, left joined with environ data
 head(pru.env.day)  # environmental data by day
 head(pru.env.ann)  # annual summary of environmental data
+head(pru.env.biwk)
 
 
 head(catchmatrix)     # each row is a year/station, cols are species
@@ -146,11 +147,9 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), ce
 # Looks like the sites ordinate out separately  
 
 
-
 ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=biweekly), cex=5) + 
   scale_color_manual(values = heat_hcl(6, power= c(1, 1.5))) + #library(colorspace)
   theme_bw() + theme(panel.grid.minor = element_blank()) 
-
 
 
 # CORRELATIONS
@@ -170,7 +169,6 @@ for(i in colnames(catchmatrix.biwk.stdtrans)){
   j <- j+1
 }
 Spp.cor
-
 
 ggplot(Spp.cor) + 
   geom_tile(aes(x="MDS1", y=Species, fill = MDS1.corr)) + 
@@ -307,6 +305,7 @@ adonis2(catchmatrix.biwk.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + w
 adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + winddir_ew + Year + Station + biweekly, 
         pru.env.biwk.std, perm=999, by = "margin")
 # same general trends, but the model fits better (resids dropped from 0.54 to 0.51), Stn R2 up
+# interaction btwn seasonal & station
 
 
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")

@@ -100,4 +100,8 @@ strucsummary(nmdspoints.biwk, station=218, mds = "MDS2") # one optimal breakpoin
 strucsummary(nmdspoints.biwk, station=230, mds = "MDS2") # zero optimal breakpoints
 
 
+strucsummary(nmdspoints.biwk, station=220, mds = "MDS3") # 
+strucsummary(nmdspoints.biwk, station=214, mds = "MDS3") # 
+strucsummary(nmdspoints.biwk, station=218, mds = "MDS3") # 
+strucsummary(nmdspoints.biwk, station=230, mds = "MDS3") # 
 
