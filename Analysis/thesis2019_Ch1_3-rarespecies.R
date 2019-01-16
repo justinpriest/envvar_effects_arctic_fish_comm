@@ -1,38 +1,106 @@
-# Logistic binomial regression
+# Logistic binomial regression 
+
+
 
 source("Analysis/thesis2019_Ch1_1-import&cleanup.R")
 
+library(ggplot2)
 
-# presence / absence
+
+# Data Import and Cleanup
 
 
-catchmatrix.biwk.pres <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
+rarespp.biwk.pres <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
   spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup() %>% 
-  arrange(Year, biweekly, Station) %>% # Just to double check order is correct
-  gather(Species, pres.abs, -Year, -biweekly, -Station) %>% filter(!Species %in% keepspp) 
-#mutate(Year = as.factor(Year), biweekly = as.factor(biweekly))
+  gather(Species, pres.abs, -Year, -biweekly, -Station) %>% 
+  filter(!Species %in% keepspp, Species != "UNKN", Species != "HYCS") %>% # Remove Unknowns and Hybrids
+  mutate(Species = replace(Species, Species == "KPSF", "LIPA")) # Combine Kelp Snailfish & unid Liparids
 
-catchmatrix.biwk.pres$pres.abs[catchmatrix.biwk.pres$pres.abs > 0] <- 1 
-
-catchmatrix.biwk.pres <- catchmatrix.biwk.pres %>% mutate(Year = as.double(Year) + 2000)
+rarespp.biwk.pres$pres.abs[rarespp.biwk.pres$pres.abs > 0] <- 1 # Turn into presence / absence
 
 
-# analysis, all rare species combined
-biweeklogit <- glm(pres.abs ~ Year + biweekly, family = "binomial", data = catchmatrix.biwk.pres)
+rarespp.biwk.pres %>% spread(Species, value = pres.abs) # turn wide to view it
+rarespp.biwk.pres %>% group_by(Species) %>% summarise(instances = sum(pres.abs)) # summarize total catch instances
+
+
+
+
+##############################
+## DO RARE SPECIES INCREASE OVER TIME OR HAVE SEASONALITY
+
+
+### All Rare Species Combined ###
+summary(glm(pres.abs ~ Year + biweekly + Species + Station, family = "binomial", data = rarespp.biwk.pres))
+
+biweeklogit <- glm(pres.abs ~ Year + biweekly, family = "binomial", data = rarespp.biwk.pres)
 
 summary(biweeklogit) #biweekly is VERY significant
 
-plot(pres.abs ~ jitter(Year, amount = 0.4 ), data=catchmatrix.biwk.pres)
-plot(pres.abs ~ jitter(biweekly, amount=0.4), data=catchmatrix.biwk.pres)
+
+# We could restrict it to remove those REALLY rare species
+# rareish <- rarespp.biwk.pres %>% group_by(Species) %>% summarise(instances = sum(pres.abs)) %>% filter(instances > 3) %>% 
+#   dplyr::select(Species) %>% as.matrix() %>% as.vector()
+# uncommonspp <- rarespp.biwk.pres %>% filter(Species %in% rareish)
+# summary(glm(pres.abs ~ Year + biweekly, family = "binomial", data = uncommonspp))
+# Doesn't really tell us much more than we already knew
+
+
+plot(pres.abs ~ jitter(Year, amount = 0.4), data=rarespp.biwk.pres)
+plot(pres.abs ~ jitter(biweekly, amount=0.4), data=rarespp.biwk.pres)
 
 
 newdf <- expand.grid(Year=2001:2018, Station=c("220", "218", "214", "230"), biweekly = 1:4)
-
 newdf <- newdf %>% mutate(pred.link = predict(biweeklogit, newdata = newdf, type = "link"),
                           pred.prob = plogis(pred.link))
 
-plot(pres.abs ~ jitter(biweekly, amount=0.4), data=catchmatrix.biwk.pres)
+plot(pres.abs ~ jitter(biweekly, amount=0.4), data=rarespp.biwk.pres)
 lines(pred.prob ~ biweekly, data=newdf)
 
-ggplot(data=newdf %>% filter(Station=="214", Year==2006), aes(x=biweekly, y = pred.prob)) + geom_line()
+ggplot(data=newdf %>% filter(Station=="214", Year==2006), aes(x=biweekly, y = pred.prob)) + 
+  geom_point() + geom_line()
+
+ggplot(data=rarespp.biwk.pres, aes(x=biweekly, y=pres.abs)) + 
+  geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  ggtitle("All 15 Rare Species Combined")
+
+
+
+binom.analyzebyspp <- function(sppfilter){
+  .raresppfilter <- rarespp.biwk.pres %>% filter(Species == sppfilter)
+  print(summary(glm(pres.abs ~ Year + biweekly + Station, family = "binomial", 
+                    data = .raresppfilter)))
+  print(ggplot(data=.raresppfilter, aes(x=biweekly, y=pres.abs)) + 
+          geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
+          geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+          ggtitle(paste0(sppfilter, " by biweekly")) )
+  print(ggplot(data=.raresppfilter, aes(x=Year, y=pres.abs)) + 
+        geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
+        geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+        ggtitle(paste0(sppfilter, " by Year")) )
+  
+}
+
+
+
+
+binom.analyzebyspp("ARCH") #insig
+binom.analyzebyspp("BRBT") #sig inc by year
+binom.analyzebyspp("BRCS") #sig dec by year
+binom.analyzebyspp("CHUM") #sig inc biwk 
+binom.analyzebyspp("ELPT") #insig
+binom.analyzebyspp("KPGL") #insig
+binom.analyzebyspp("LIPA") #sig inc biwk
+binom.analyzebyspp("LNSK") #insig
+binom.analyzebyspp("RKGL") #insig
+binom.analyzebyspp("SHSC") #insig
+binom.analyzebyspp("SLEB") #insig
+binom.analyzebyspp("SLSC") #sig inc by year
+binom.analyzebyspp("SOCK") #insig
+binom.analyzebyspp("WOLF") #insig
+binom.analyzebyspp("WSGL") #insig
+
+
+
+
 
