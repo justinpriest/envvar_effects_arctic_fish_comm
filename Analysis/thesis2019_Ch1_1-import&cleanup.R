@@ -5,7 +5,7 @@
 # This is the first script for Justin Priest's thesis analyses, Chapter 1
 # Data is pulled from an .RData file, which was compiled using a script from
 # "/Grad School/Slope Project/PB_DataImport2001-2016.R" which imports data from 
-# the original excel file sent over by LGL Ecological Research. Data from 2017 
+# the original excel file sent by LGL Ecological Research. Data from 2017 
 # and 2018 were entered into a Google Sheets doc, then exported to .csv files 
 # which were imported in scripts "2017 import.R" and "2018 import.R"
 
@@ -36,6 +36,37 @@ env_allyears <- env_allyears %>% add_column(Month = month(env_allyears$Date), .a
 # I define bottom 1.5 as analogous to 'bottom'
 watertemps <- env_allyears %>% dplyr::select(-c(Salin_Top, Salin_Mid, Salin_Bot, Salin_Bot_1.5)) 
 watersalin <- env_allyears %>% dplyr::select(-c(Temp_Top, Temp_Mid, Temp_Bot, Temp_Bot_1.5)) 
+
+
+
+##### FUNCTIONS #####
+
+# This function adds the day of year column (if not already present), and then the weeknumber
+addweeknum <- function(dataframename){
+  dataframename <- dataframename %>% 
+    mutate(day.of.year = yday(EndDate),
+           week = ifelse(day.of.year <= 187, 1, 
+                         ifelse(day.of.year > 187 & day.of.year <= 194, 2, 
+                                ifelse(day.of.year > 194 & day.of.year <= 201, 3, 
+                                       ifelse(day.of.year > 201 & day.of.year <= 208, 4, 
+                                              ifelse(day.of.year > 208 & day.of.year <= 215, 5,
+                                                     ifelse(day.of.year > 215 & day.of.year <= 222, 6,
+                                                            ifelse(day.of.year > 222 & day.of.year <= 229, 7,
+                                                                   ifelse(day.of.year > 229 & day.of.year <= 236, 8,
+                                                                          ifelse(day.of.year > 236, 9, NA))))))))))
+  
+}
+
+# Similarly, this function adds the day of year column, then the biweek number
+addbiwknum <- function(dataframename){
+  dataframename <- dataframename %>% 
+    mutate(day.of.year = yday(EndDate),
+           biweekly = ifelse(day.of.year <= 196, 1, # July 15 and before 
+                             ifelse(day.of.year > 196 & day.of.year <= 212, 2, #btwn July 16 and 31
+                                    ifelse(day.of.year > 212 & day.of.year <= 227, 3, #Aug 1 - 15
+                                           ifelse(day.of.year > 227, 4, NA))))) # Aug 16 and after 
+}
+
 
 
 
@@ -79,14 +110,8 @@ catchenviron <- left_join(allcatch, watersalin %>% dplyr::select(-c(Month)),
   left_join(watertemps %>% dplyr::select(-c( Month)), 
             by = c("Year" = "Year", "EndDate" = "Date", "Station" = "Station")) %>% 
   left_join(deadhorsewind %>% dplyr::select(-month), by = c("Year" = "Year", "EndDate" = "Date")) %>%
-  left_join(sagdisch, by = c("EndDate" = "Date")) 
-
-catchenviron <- catchenviron %>% 
-  mutate(biweekly = ifelse(day.of.year <= 196, 1, 
-                           ifelse(day.of.year > 196 & day.of.year <= 213, 2, #btwn July 15 and Aug 1
-                                  ifelse(day.of.year > 213 & day.of.year <= 227, 3, #Aug 1 - 15
-                                         ifelse(day.of.year > 227, 4, NA))))) %>% # after Aug 15 
-  filter(Station != 231)
+  left_join(sagdisch, by = c("EndDate" = "Date")) %>%
+  addbiwknum(catchenviron) %>% filter(Station != 231)
 
 ###################################
 # Join All Environmental Data
@@ -130,12 +155,7 @@ pru.env.day <- catchenviron %>% dplyr::distinct(EndDate, Station) %>%
 
 # finally, aggregate daily info to a biweekly scale
 pru.env.biwk <- pru.env.day %>% 
-  mutate(Year = year(EndDate), 
-         day.of.year = yday(EndDate), 
-         biweekly = factor(ifelse(day.of.year <= 196, 1, 
-                                  ifelse(day.of.year > 196 & day.of.year <= 213, 2, #btwn July 15 and Aug 1
-                                         ifelse(day.of.year > 213 & day.of.year <= 227, 3, #Aug 1 - 15
-                                                ifelse(day.of.year > 227, 4, NA))))) ) %>% # after Aug 15
+  mutate(Year = year(EndDate)) %>% addbiwknum() %>% #add year and biweekly cols
   group_by(Year, biweekly, Station) %>%
   summarise(biwkmeanspeed_kph = mean(dailymeanspeed_kph, na.rm = TRUE),
             biwkmeandir = ((circ.mean(2*pi*na.omit(dailymeandir)/360))*(360 / (2*pi))) %%360,
@@ -181,31 +201,12 @@ effort <- full_join(all.len %>%
 
 
 
-# This function adds the day of year column (if not already present), and then the weeknumber
-addweeknum <- function(dataframename){
-  dataframename <- dataframename %>% 
-    mutate(day.of.year = yday(EndDate),
-           week = ifelse(day.of.year <= 187, 1, 
-                         ifelse(day.of.year > 187 & day.of.year <= 194, 2, 
-                                ifelse(day.of.year > 194 & day.of.year <= 201, 3, 
-                                       ifelse(day.of.year > 201 & day.of.year <= 208, 4, 
-                                              ifelse(day.of.year > 208 & day.of.year <= 215, 5,
-                                                     ifelse(day.of.year > 215 & day.of.year <= 222, 6,
-                                                            ifelse(day.of.year > 222 & day.of.year <= 229, 7,
-                                                                   ifelse(day.of.year > 229 & day.of.year <= 236, 8,
-                                                                          ifelse(day.of.year > 236, 9, NA))))))))))
-  
-}
 
-effort.wk <- addweeknum(effort) %>% group_by(Year, Net, Station, week) %>% 
+effort.wk.stn <- addweeknum(effort) %>% group_by(Year, Net, Station, week) %>% 
   summarise(Effort_NetHrs = sum(Effort_NetHrs, na.rm = TRUE))
 
-effort.biwk <- effort %>% mutate(day.of.year = yday(EndDate),
-  biweekly = ifelse(day.of.year <= 196, 1, 
-                         ifelse(day.of.year > 196 & day.of.year <= 213, 2, #btwn July 15 and Aug 1
-                                ifelse(day.of.year > 213 & day.of.year <= 227, 3, #Aug 1 - 15
-                                       ifelse(day.of.year > 227, 4, NA))))) %>% # after Aug 15 
-  group_by(Year, biweekly, Station) %>% summarise(Effort_NetHrs = sum(Effort_NetHrs, na.rm = TRUE)) 
+effort.biwk.stn <- addbiwknum(effort) %>% group_by(Year, biweekly, Station) %>% 
+  summarise(Effort_NetHrs = sum(Effort_NetHrs, na.rm = TRUE)) 
 
   
 

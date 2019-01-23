@@ -307,6 +307,10 @@ adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cf
 # same general trends, but the model fits better (resids dropped from 0.54 to 0.51), Stn R2 up
 # interaction btwn seasonal & station
 
+adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station:biweekly + Temp_Top + Salin_Top + meandisch_cfs + winddir_ew, 
+        pru.env.biwk.std, perm=999, by = "margin")
+# everything is very significant. Not sure what this means
+
 
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Year), main = "Biweekly")

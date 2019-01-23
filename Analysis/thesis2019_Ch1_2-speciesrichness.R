@@ -8,6 +8,7 @@
 library(ggplot2)
 library(viridis)
 library(MuMIn)
+library(mgcv)
 
 source("Analysis/thesis2019_Ch1_1-import&cleanup.R")
 
@@ -19,13 +20,13 @@ spp_richness <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Stat
   summarise(spp_yr = n_distinct(Species)) 
 
 spp_richness <- spp_richness %>% left_join(pru.env.ann %>% dplyr::select(-Station) %>% 
-                                             mutate(Year = as.numeric(Year) + 2000) %>%
-                                             group_by(Year) %>% summarise_all(mean), 
+                                           mutate(Year = as.numeric(Year) + 2000) %>%
+                                           group_by(Year) %>% summarise_all(mean), 
                                            by = c("Year" = "Year"))
 
 #Set up standardized variables just in case to use later
-spp_richness.std <- as.data.frame(scale(spp_richness)) #scale to mu=0, sd=1
-spp_richness.std <- spp_richness.std %>% dplyr::select(-annwinddir)
+spp_richness.std <- as.data.frame(scale(spp_richness)) %>% #scale to mu=0, sd=1
+  dplyr::select(-annwinddir)
 
 
 # Quick EDA
@@ -37,16 +38,17 @@ plotenv <- function(env_var){
   
   annotateloc <- min(spp_richness %>% dplyr::select(env_var)) +
           (max(spp_richness %>% dplyr::select(env_var)) - min(spp_richness %>% dplyr::select(env_var)))/5
-  pval <- summary(lm(paste0("spp_yr ~ ", env_var), data = spp_richness))$coef[2,4]
-  r2 <- summary(lm(paste0("spp_yr ~ ", env_var), data = spp_richness))$adj.r.squared
+  mod <- summary(glm(paste0("spp_yr ~ ", env_var), data = spp_richness))
+  pval <- mod$coef[2,4]
+  gof <- 1 - (mod$deviance / mod$null.deviance)
 
   p <- ggplot(data = spp_richness, aes(x = !! env_var1, y = spp_yr, color = Year)) +
     geom_point(cex = 3) +
     geom_smooth(method = "lm", se=FALSE) +
     scale_color_viridis() + theme_bw() +
     geom_text(label = spp_richness$Year, nudge_y = 0.25, size = 4) +
-    annotate("text", x = annotateloc, y = 23, label = paste0("p-value is: ", round(pval,3))) + 
-    annotate("text", x = annotateloc, y = 23.5, label = paste0("Adj R^2 is: ", round(r2,2))) 
+    annotate("text", x = annotateloc, y = 23, label = paste0("p-value is: ", round(pval,3))) +
+    annotate("text", x = annotateloc, y = 23.5, label = paste0("GOF (1-dev/null.dev) is: ", round(gof,2))) 
   return(p)
 }
 
@@ -60,16 +62,16 @@ plotenv("annwinddir_ew")
 
 # SUMMARY: Individually, only Year is significant, with temp and salinity marginal. 
 # So we conclude that species richness is significantly increasing over time
-summary(lm(spp_yr ~ Year, data = spp_richness)) 
+summary(glm(spp_yr ~ Year, data = spp_richness)) 
 
 
 
 
 # Now let's do some model selection to best explain the results that we see 
 options(na.action = "na.fail")
-fullmodel <- lm(spp_yr ~ Year + annwindspeed_kph + anndisch_cfs + 
+fullmodel <- glm(spp_yr ~ Year + annwindspeed_kph + anndisch_cfs + 
         annsal_ppt + anntemp_c + annwinddir_ew, data = spp_richness)
-fullmodel1 <- lm(spp_yr ~ Year + annwindspeed_kph + anndisch_cfs + 
+fullmodel1 <- glm(spp_yr ~ Year + annwindspeed_kph + anndisch_cfs + 
                   annsal_ppt + anntemp_c + Year:anntemp_c, data = spp_richness)
 dredge(fullmodel1)
 
@@ -82,12 +84,10 @@ subset(dredge(fullmodel1), delta < 4)
 
 
 #######################
-# Does Species Richness increase over the season? 
+## Does Species Richness increase over the season? 
+## WEEKLY
 
 # The next section will use the function addweeknum() will adds day of year and weeknumber columns
-
-
-
 spp_richness.wk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Station != 231) 
 spp_richness.wk <- addweeknum(spp_richness.wk) %>% group_by(Year, week) %>% summarise(num_spp = n_distinct(Species)) 
 
@@ -117,7 +117,6 @@ summary(lm(num_spp ~ week + (Year), data=spp_richness.wk))
 ggplot(addweeknum(pru.env.day) %>% group_by(Year, week) %>% summarise(meansal=mean(Salin_Mid, na.rm = TRUE)), 
        aes(x = week, y = meansal, group = Year, color = Year)) + 
   geom_smooth(method = "loess", se=FALSE, span=1.25)
-
 
 
 
@@ -163,3 +162,39 @@ salinitygif <- ggplot(data = weeklysalinity, mapping = aes(x=week, y = meansal, 
 #   combined_gif <- c(combined_gif, combined)
 # }
 # combined_gif
+
+
+
+
+## SPECIES RICHNESS BIWEEKLY ##
+
+
+
+spp_richness.biwk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Station != 231) %>%
+  addbiwknum() %>% group_by(Year, biweekly) %>% summarise(num_spp = n_distinct(Species)) 
+
+
+effort.biwk <- addbiwknum(effort) %>% filter(Station != 231) %>%  
+  group_by(Year, biweekly) %>% summarise(biweeklyeffort = sum(Effort_NetHrs, na.rm = TRUE)) %>%
+  mutate(sample_proportion = biweeklyeffort / (48*4*15)) #2880 is 4 nets with two cod ends, fishing 24hrs for 15 days (15*24*4*2)
+# sample_proportion is the amount of sampling relative to 100% coverage (but can be slightly higher than 100%)
+# We're using 15 days as "full effort" sampling but e.g., July 16-31 is 16 days. This is why we scale for effort though
+
+
+spp_richness.biwk <- spp_richness.biwk %>% left_join(effort.biwk %>% dplyr::select(biweekly, sample_proportion), 
+                                                 by = c("Year" = "Year", "biweekly" = "biweekly")) %>%
+  mutate(num_spp_adj = num_spp * sample_proportion)
+
+
+
+ggplot(data = spp_richness.biwk, aes(x=biweekly, y = num_spp_adj, group=Year, color=Year)) + 
+  geom_line() +
+  geom_point() +
+  scale_color_viridis() + theme_bw() 
+
+
+summary(glm(num_spp ~ biweekly + (Year), data=spp_richness.biwk)) 
+summary(gam(num_spp ~ biweekly + (Year), data=spp_richness.biwk))
+summary(gam(num_spp ~ I(biweekly^2) + (Year), data=spp_richness.biwk))
+summary(gam(num_spp ~ biweekly + s(Year), data=spp_richness.biwk))
+summary(gam(num_spp ~ biweekly^2 , data=spp_richness.biwk))
