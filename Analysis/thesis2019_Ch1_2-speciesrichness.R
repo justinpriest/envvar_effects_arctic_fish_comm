@@ -9,6 +9,8 @@ library(ggplot2)
 library(viridis)
 library(MuMIn)
 library(mgcv)
+library(gratia) # devtools::install_github('gavinsimpson/gratia')
+library(directlabels)
 
 source("Analysis/thesis2019_Ch1_1-import&cleanup.R")
 
@@ -188,13 +190,63 @@ spp_richness.biwk <- spp_richness.biwk %>% left_join(effort.biwk %>% dplyr::sele
 
 
 ggplot(data = spp_richness.biwk, aes(x=biweekly, y = num_spp_adj, group=Year, color=Year)) + 
-  geom_line() +
-  geom_point() +
-  scale_color_viridis() + theme_bw() 
+  geom_line() + geom_point() + scale_color_viridis() + theme_bw() 
+
+ggplot(data = spp_richness.biwk, aes(x=Year, y = num_spp_adj, group=biweekly, color=biweekly)) + 
+  geom_line() + geom_point() + scale_color_viridis() + theme_bw()
 
 
 summary(glm(num_spp ~ biweekly + (Year), data=spp_richness.biwk)) 
-summary(gam(num_spp ~ biweekly + (Year), data=spp_richness.biwk))
-summary(gam(num_spp ~ I(biweekly^2) + (Year), data=spp_richness.biwk))
-summary(gam(num_spp ~ biweekly + s(Year), data=spp_richness.biwk))
-summary(gam(num_spp ~ biweekly^2 , data=spp_richness.biwk))
+summary(gam(num_spp ~ biweekly + (Year), data=spp_richness.biwk, gamma = 1.4))
+summary(gam(num_spp ~ I(biweekly^2) + (Year), data=spp_richness.biwk, gamma = 1.4))
+summary(gam(num_spp ~ biweekly + s(Year, k=-1), data=spp_richness.biwk, gamma = 1.4))
+summary(gam(num_spp ~ biweekly^2 , data=spp_richness.biwk, gamma = 1.4))
+summary(gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk, gamma = 1.4))
+
+dredge(gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk, gamma = 1.4)) #TOP MODEL
+dredge(gam(num_spp ~ biweekly*Year, data=spp_richness.biwk, gamma = 1.4))
+dredge(gam(num_spp ~ biweekly + Year + I(biweekly^2), data=spp_richness.biwk, gamma = 1.4))
+dredge(gam(num_spp ~ biweekly + s(Year), data=spp_richness.biwk, gamma = 1.4))
+
+
+topmod.spprich <- gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk, gamma = 1.4)
+summary(topmod.spprich)
+gam.check(topmod.spprich)
+plot.gam(topmod.spprich, se=TRUE)
+vis.gam(topmod.spprich, plot.type="contour", color="terrain")
+
+
+# Top model is species richness ~ s(biweekly, k=3) + Year
+# GAM fits better than GLM
+# We conclude that there is significant curvature in the model
+
+gratia::draw(topmod.spprich)
+gratia::appraise(topmod.spprich)
+
+
+## Plotting top model
+# Modified from pkg "gratia" https://github.com/gavinsimpson/gratia/blob/master/R/data-slice.R
+modelpredict.gam <- function(object, var1, var2, n = 50) {
+  #object is a gam model object, var1 is variable 1 (x axis), must be numeric
+  #var2 is variable 2 (y axis), must be numeric, n is length out for pred intervals
+  mf <- fix_offset(topmod.spprich, model.frame(topmod.spprich)) # offset not necessary for most models
+  data1 <- seq(from = min(mf %>% dplyr::select(var1)), to = max(mf %>% dplyr::select(var1)), length.out = n)
+  data2 <- seq(from = min(mf %>% dplyr::select(var2)), to = max(mf %>% dplyr::select(var2)), length.out = n)
+  
+  results <- crossing(data1, data2)
+  names(results)[1:2] <- c(var1, var2)
+  results$pred.gam <- predict.gam(topmod.spprich, newdata = results)
+  print(results)
+  
+}
+
+
+ggplot(modelpredict.gam(topmod.spprich, "Year", "biweekly"), aes(x=Year, y=biweekly, z=pred.gam)) + 
+  geom_raster(aes(fill = pred.gam)) + geom_contour() +
+  geom_dl(aes(label=..level..), method = list("top.pieces", cex=0.75), 
+          stat="contour", breaks = seq(from=13, to=18.5, by=0.5)) +
+  scale_fill_gradientn(colours= terrain.colors(6)) +
+  theme_bw()
+
+
+
