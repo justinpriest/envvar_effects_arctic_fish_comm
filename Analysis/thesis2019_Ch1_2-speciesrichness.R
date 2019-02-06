@@ -176,6 +176,7 @@ spp_richness.biwk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" &
   addbiwknum() %>% group_by(Year, biweekly) %>% summarise(num_spp = n_distinct(Species)) 
 
 
+
 effort.biwk <- addbiwknum(effort) %>% filter(Station != 231) %>%  
   group_by(Year, biweekly) %>% summarise(biweeklyeffort = sum(Effort_NetHrs, na.rm = TRUE)) %>%
   mutate(sample_proportion = biweeklyeffort / (48*4*15)) #2880 is 4 nets with two cod ends, fishing 24hrs for 15 days (15*24*4*2)
@@ -210,6 +211,8 @@ dredge(gam(num_spp ~ biweekly + s(Year), data=spp_richness.biwk, gamma = 1.4))
 
 
 topmod.spprich <- gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk, gamma = 1.4)
+
+
 summary(topmod.spprich)
 gam.check(topmod.spprich)
 plot.gam(topmod.spprich, se=TRUE)
@@ -247,6 +250,30 @@ ggplot(modelpredict.gam(topmod.spprich, "Year", "biweekly"), aes(x=Year, y=biwee
           stat="contour", breaks = seq(from=13, to=18.5, by=0.5)) +
   scale_fill_gradientn(colours= terrain.colors(6)) +
   theme_bw()
+
+
+
+
+######## Station by Station effects, not used at this time but good summary to know
+spp_richness.biwk.stn <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Station != 231) %>%
+  addbiwknum() %>% group_by(Year, biweekly, Station) %>% summarise(num_spp = n_distinct(Species)) 
+
+
+topmod.spprich220 <- gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk.stn %>% filter(Station==220), gamma = 1.4)
+topmod.spprich230 <- gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk.stn %>% filter(Station==230), gamma = 1.4)
+topmod.spprich214 <- gam(num_spp ~ s(biweekly, k=3), data=spp_richness.biwk.stn %>% filter(Station==214), gamma = 1.4)
+topmod.spprich218 <- gam(num_spp ~ s(biweekly, k=3) + s(Year, k=4), data=spp_richness.biwk.stn %>% filter(Station==218), gamma = 1.4)
+
+summary(topmod.spprich220)
+summary(topmod.spprich230)
+summary(topmod.spprich214)
+summary(topmod.spprich218)
+
+vis.gam(topmod.spprich220, plot.type="contour", color="terrain")
+vis.gam(topmod.spprich230, plot.type="contour", color="terrain")
+plot(topmod.spprich214, plot.type="contour", color="terrain")
+vis.gam(topmod.spprich218, plot.type="contour", color="terrain")
+
 
 
 

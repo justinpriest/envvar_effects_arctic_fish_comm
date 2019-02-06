@@ -19,7 +19,7 @@ rarespp.biwk.pres <- catchenviron %>% group_by(Year, biweekly, Station, Species)
 rarespp.biwk.pres$pres.abs[rarespp.biwk.pres$pres.abs > 0] <- 1 # Turn into presence / absence
 
 
-rarespp.biwk.pres %>% spread(Species, value = pres.abs) # turn wide to view it
+#rarespp.biwk.pres %>% spread(Species, value = pres.abs) # turn wide to view it
 rarespp.biwk.pres %>% group_by(Species) %>% summarise(instances = sum(pres.abs)) # summarize total catch instances
 
 

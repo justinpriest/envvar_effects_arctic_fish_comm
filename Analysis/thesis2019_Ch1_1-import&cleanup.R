@@ -111,7 +111,7 @@ catchenviron <- left_join(allcatch, watersalin %>% dplyr::select(-c(Month)),
             by = c("Year" = "Year", "EndDate" = "Date", "Station" = "Station")) %>% 
   left_join(deadhorsewind %>% dplyr::select(-month), by = c("Year" = "Year", "EndDate" = "Date")) %>%
   left_join(sagdisch, by = c("EndDate" = "Date")) %>%
-  addbiwknum(catchenviron) %>% filter(Station != 231)
+  addbiwknum() %>% filter(Station != 231)
 
 ###################################
 # Join All Environmental Data
@@ -257,7 +257,7 @@ rownames(catchmatrix.biwk) <- paste0(catchmatrix.biwk$Year, catchmatrix.biwk$biw
 
 # Create CPUE dataframe (just for biweekly right now)
 catchmatrix.biwk.cpue <- catchmatrix.biwk %>% gather(Species, catch, -Year, -biweekly, -Station) %>%
-  left_join(effort.biwk, by = c("Year" = "Year", "biweekly" = "biweekly", "Station" = "Station")) %>%
+  left_join(effort.biwk.stn, by = c("Year" = "Year", "biweekly" = "biweekly", "Station" = "Station")) %>%
   mutate(CPUE_biwk = catch/(Effort_NetHrs/(24*2*14))) %>% #This is biweekly CPUE (2 nets fishing 24 hrs/day, for ~14 days)
   dplyr::select(-catch, -Effort_NetHrs) %>%
   spread(Species, value = CPUE_biwk)
