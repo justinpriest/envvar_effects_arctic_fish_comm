@@ -164,7 +164,7 @@ salinitygif <- ggplot(data = weeklysalinity, mapping = aes(x=week, y = meansal, 
 #   combined_gif <- c(combined_gif, combined)
 # }
 # combined_gif
-
+save_animation(combined_gif, "combined.gif")
 
 
 

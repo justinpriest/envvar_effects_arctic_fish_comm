@@ -316,6 +316,13 @@ boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Year), main = "Biweekly")
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$biweekly), main = "Biweekly")
 
+# Test visualization to see marginal effects cumulative plot
+# test1 <- data.frame(Var=c("Residual", "Discharge", "Wind", "Temp", "Year",  "Station", "Seasonality", "Salinity"), 
+#                    R2=c(0.57508, 0.00763, 0.01046, 0.01110, 0.01869, 0.06058, 0.12530, 0.19117))
+# test1$Var <- factor(test1$Var, levels = test1$Var)
+# ggplot(test1, aes(x="", y=R2, fill=Var)) + geom_bar(stat = "identity", width = 0.5) + 
+#   scale_fill_brewer(palette="Set3") + theme_bw() + labs(x="", y=bquote(Marginal~R^2))
+
 
 
 # Simper
@@ -327,9 +334,6 @@ summary(simper(catchmatrix.std, pru.env.ann$Station))
 summary(simper(catchmatrix.biwk.stdtrans, pru.env.biwk.std$Year))
 summary(simper(catchmatrix.biwk.stdtrans, pru.env.biwk.std$Station))
 # Seems like THSB, RDWF, PINK, PCHG are most common? Hard to tell
-
-
-
 
 
 
