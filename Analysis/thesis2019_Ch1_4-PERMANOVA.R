@@ -235,7 +235,7 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station),
   scale_x_continuous(limits = c(-0.23, 0.25)) + scale_y_continuous(limits = c(-0.18, 0.25)) +
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
                  cbind(r2=env.vectors.biwk$vectors$r, pval =env.vectors.biwk$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * (r2^0.4)/3, y=0, yend=NMDS2 * (r2^0.4)/3), cex =2) +#need to fix scale (mult by 5?)
+               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex =2) +#need to fix scale (mult by 5?)
   scale_color_manual(values =  brewer.pal(4, "Set2")) +
   theme_bw() + theme(panel.grid.minor = element_blank()) 
 
