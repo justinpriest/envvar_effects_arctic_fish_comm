@@ -190,12 +190,13 @@ ggplot(Spp.cor) +
 ## Bioenv ##
 # Bioenv is a mantel type test: which combination of environmental var explain it best
 bioenv(braydist ~ annwindspeed_kph + annwinddir + anndisch_cfs + 
-         annsal_ppt + anntemp_c, pru.env.ann)
+         annsal_ppt + anntemp_c, pru.env.ann, metric = "euclidean")
 # salinity and temp are the best predictors
 
 bioenv(braydist.biwk ~ biwkmeanspeed_kph + biwkmeandir + meandisch_cfs + 
-         Salin_Top + Temp_Top + winddir_ew, pru.env.biwk)
+         Salin_Top + Temp_Top + winddir_ew, pru.env.biwk, metric = "euclidean")
 # salinity, temp, and wind direction are best subset of env variables
+
 
 
 ## EnvFit ##
@@ -245,6 +246,16 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station),
 
 # following example from vegan tutorial, page 33
 # http://cc.oulu.fi/~jarioksa/opetus/metodi/vegantutor.pdf
+
+############ !!!!!!!!!!!!!!!!!!!!!!!!
+# Update to sq rt transform the env var for annual
+# pru.env.biwk.std <- pru.env.biwk.sub
+# for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
+#   pru.env.biwk.std[i] <- ((pru.env.biwk.sub[i]+1)^0.5)/max(((pru.env.biwk.sub[i]+1)^0.5))}
+#using square root tranform
+
+
+
 
 betad <- betadiver(catchmatrix.std, "z")   # using Arrhenius z measure of beta diversity
 boxplot(betadisper(betad, pru.env.ann$Year), main = "Annual")
