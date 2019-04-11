@@ -107,6 +107,7 @@ ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point() +
 
 ##########################
 ## nMDS axis regression ##
+## Will look into this more in next secion, TimeSeries
 
 plot(MDS1 ~ Year, data = nmdspoints)
 summary(lm(MDS1 ~ Year , data = nmdspoints)) # overall not significant
