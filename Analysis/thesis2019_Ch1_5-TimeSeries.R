@@ -105,3 +105,8 @@ strucsummary(nmdspoints.biwk, station=214, mds = "MDS3") #
 strucsummary(nmdspoints.biwk, station=218, mds = "MDS3") # 
 strucsummary(nmdspoints.biwk, station=230, mds = "MDS3") # 
 
+
+############
+
+# Focus on MDS3 if that's the axis that has the strongest time trend
+

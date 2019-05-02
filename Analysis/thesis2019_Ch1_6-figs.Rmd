@@ -1,0 +1,73 @@
+---
+title: "Thesis Tables and Figures"
+author: "Justin Priest"
+date: "May 1, 2019"
+output: word_document
+---
+This document produces figures and tables for the report then outputs it to MS Word. 
+The tables from the Word doc can then be copied into Excel for final formatting to remain consistent. 
+
+
+```{r loading}
+#Figures and Tables
+
+
+library(corrplot)
+library(knitr)
+library(kableExtra)
+
+# Later can make an RDA file to save output from all of these
+source("Analysis/thesis2019_Ch1_2-speciesrichness.R")
+source("Analysis/thesis2019_Ch1_3-rarespecies.R")
+source("Analysis/thesis2019_Ch1_4-PERMANOVA.R")
+source("Analysis/thesis2019_Ch1_5-TimeSeries.R")
+
+
+```
+
+
+``` {r corrplot}
+env.biwk.corr <- cor(pru.env.biwk %>% ungroup() %>% dplyr::select(-Year, -biweekly, -Station), use = "complete.obs")
+env.ann.corr <- cor(pru.env.ann %>% ungroup() %>% dplyr::select(-Year,  -Station), use = "complete.obs")
+
+
+corrplot.mixed(env.biwk.corr)
+corrplot.mixed(env.ann.corr)
+
+env.biwk.corr[upper.tri(env.biwk.corr)] <- 0
+lower.tri(env.biwk.corr, diag = FALSE)
+```
+
+
+
+```{r Table1, echo = FALSE, message = FALSE, warning=FALSE}
+# Total Catch Table
+catchtable <- as_tibble(expand.grid(Year=2001:2018, 
+                                    biweekly=1:4, 
+                                    Species=unique(catchenviron$Species))) %>% 
+  left_join(catchenviron, 
+            by = c("Species" = "Species", "Year" = "Year", "biweekly" = "biweekly")) %>% 
+  # this first part makes sure to add in blank Year/biweek combos for species which are not frequently caught
+  filter(Species != "UNKN" & Species != "LIPA" & Species != "HYCS"  & Species != "ELPT") %>%
+  group_by(Species, Year, biweekly) %>% summarise(biwkCatch = sum(totcount)) %>% 
+  mutate(biwkCatch = replace_na(biwkCatch, 0)) %>% #replace NAs with 0
+  group_by(Species) %>% 
+  summarise(MeanCatch = mean(biwkCatch), MinCatch = min(biwkCatch), MaxCatch = max(biwkCatch),
+            PercentPresent = 1-(sum(if_else(biwkCatch == 0, 1, 0)) / (4*18))) %>% 
+  left_join(spplookup, by = c("Species" = "Species")) %>% ungroup() %>% 
+  dplyr::select(commonname, MeanCatch, MinCatch, MaxCatch, PercentPresent) %>%
+  arrange(commonname) %>% rename(Species = commonname) %>% 
+  kableExtra::kable(format.args = list(big.mark = ","), digits = c(0, 1, 0, 0, 3))
+
+catchtable
+```
+
+
+```{r permanovatables, echo = FALSE, message = FALSE, warning=FALSE}
+
+
+data.frame(permanova.ann)
+
+data.frame(permanova.biwk)
+
+```

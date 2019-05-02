@@ -46,7 +46,7 @@ braydist <- vegdist(catchmatrix.std, method="bray") # This is a dissimilarity ma
 # library(gplots)
 # heatmap.2(as.matrix(braydist))
 
-totalNMDS <- metaMDS(braydist, k=3) # had to choose k=3 to get below 0.20
+totalNMDS <- metaMDS(braydist, k=3, wascores = TRUE) # had to choose k=3 to get below 0.20
 
 #Plot, put years by color, add environ vectors
 plot(totalNMDS, display = "sites", type = "n", main = "Annual Results - colored by year grp")
@@ -233,11 +233,11 @@ ggplot(nmdspoints, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station)) +
 
 
 
-ggplot(nmdspoints.biwk, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station), cex =5) +
+ggplot(nmdspoints.biwk, aes(x=MDS1, y = MDS2)) + geom_point(aes(color = Station), cex = 5) +
   scale_x_continuous(limits = c(-0.23, 0.25)) + scale_y_continuous(limits = c(-0.18, 0.25)) +
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
-                 cbind(r2=env.vectors.biwk$vectors$r, pval =env.vectors.biwk$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex =2) +#need to fix scale (mult by 5?)
+                 cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
+               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2) +#need to fix scale (mult by 5?)
   scale_color_manual(values =  brewer.pal(4, "Set2")) +
   theme_bw() + theme(panel.grid.minor = element_blank()) 
 
@@ -278,10 +278,14 @@ boxplot(betadisper(betad, pru.env.ann$Station), main = "Annual")
 
 
 adonis(catchmatrix.std ~ annsal_ppt + annwinddir_ew + annwindspeed_kph + 
-         anndisch_cfs + anntemp_c, data=pru.env.ann, perm=999)
-
+          anndisch_cfs + anntemp_c, data=pru.env.ann, perm=999)
 
 adonis(braydist ~ Year + Station, data = pru.env.ann, perm = 9999)
+
+permanova.ann <- adonis2(catchmatrix.std ~ annsal_ppt + annwinddir_ew + annwindspeed_kph + 
+         anndisch_cfs + anntemp_c, data=pru.env.ann, perm=999, by = "margin")
+
+permanova.ann
 
 
 
@@ -319,9 +323,14 @@ adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cf
 # same general trends, but the model fits better (resids dropped from 0.54 to 0.51), Stn R2 up
 # interaction btwn seasonal & station
 
-adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station:biweekly + Temp_Top + Salin_Top + meandisch_cfs + winddir_ew, 
+permanova.biwk <- adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station + biweekly + #Station*biweekly + 
+          Temp_Top + Salin_Top + meandisch_cfs + winddir_ew, 
         pru.env.biwk.std, perm=999, by = "margin")
+permanova.biwk
 # everything is very significant. Not sure what this means
+# BIWEEKLY AS A FACTOR?
+
+
 
 
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")
@@ -348,4 +357,16 @@ summary(simper(catchmatrix.biwk.stdtrans, pru.env.biwk.std$Station))
 # Seems like THSB, RDWF, PINK, PCHG are most common? Hard to tell
 
 
+# Now overlay with the Species scores from wascores()
+ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), cex=5) + 
 
+  theme_bw() + theme(panel.grid.minor = element_blank()) +
+  geom_text(data = data.frame(wascores(totalNMDS$points, w = catchmatrix.std)) %>% 
+              mutate(species = rownames(.)), 
+            aes(x=MDS1, y=MDS2, label = species))
+
+ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), cex=5) + 
+  theme_bw() + theme(panel.grid.minor = element_blank()) +
+  geom_text(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
+              mutate(species = rownames(.)), 
+            aes(x=MDS1, y=MDS2, label = species), cex=5)

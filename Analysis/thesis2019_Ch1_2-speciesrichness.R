@@ -57,8 +57,8 @@ plotenv <- function(env_var){
 plotenv("Year")
 plotenv("annwindspeed_kph")
 plotenv("anndisch_cfs")
-plotenv("annsal_ppt")
-plotenv("anntemp_c")
+plotenv("annsal_ppt") #Add variance of salinity?
+plotenv("anntemp_c") 
 plotenv("annwinddir_ew")
 
 
@@ -202,7 +202,10 @@ summary(gam(num_spp ~ biweekly + (Year), data=spp_richness.biwk, gamma = 1.4))
 summary(gam(num_spp ~ I(biweekly^2) + (Year), data=spp_richness.biwk, gamma = 1.4))
 summary(gam(num_spp ~ biweekly + s(Year, k=-1), data=spp_richness.biwk, gamma = 1.4))
 summary(gam(num_spp ~ biweekly^2 , data=spp_richness.biwk, gamma = 1.4))
+
 summary(gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk, gamma = 1.4))
+testgam <- (gam(num_spp ~ s(Year, biweekly, k=6), data=spp_richness.biwk, gamma = 1.4))
+
 
 dredge(gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk, gamma = 1.4)) #TOP MODEL
 dredge(gam(num_spp ~ biweekly*Year, data=spp_richness.biwk, gamma = 1.4))
@@ -217,6 +220,8 @@ summary(topmod.spprich)
 gam.check(topmod.spprich)
 plot.gam(topmod.spprich, se=TRUE)
 vis.gam(topmod.spprich, plot.type="contour", color="terrain")
+
+vis.gam(testgam, plot.type="contour", color="terrain")
 
 
 # Top model is species richness ~ s(biweekly, k=3) + Year
@@ -262,7 +267,7 @@ spp_richness.biwk.stn <- allcatch %>% filter(Species != "HYCS" & Species != "UNK
 topmod.spprich220 <- gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk.stn %>% filter(Station==220), gamma = 1.4)
 topmod.spprich230 <- gam(num_spp ~ s(biweekly, k=3) + Year, data=spp_richness.biwk.stn %>% filter(Station==230), gamma = 1.4)
 topmod.spprich214 <- gam(num_spp ~ s(biweekly, k=3), data=spp_richness.biwk.stn %>% filter(Station==214), gamma = 1.4)
-topmod.spprich218 <- gam(num_spp ~ s(biweekly, k=3) + s(Year, k=4), data=spp_richness.biwk.stn %>% filter(Station==218), gamma = 1.4)
+topmod.spprich218 <- gam(num_spp ~ s(Year, k=4) + s(biweekly, k=3), data=spp_richness.biwk.stn %>% filter(Station==218), gamma = 1.4)
 
 summary(topmod.spprich220)
 summary(topmod.spprich230)
@@ -270,9 +275,10 @@ summary(topmod.spprich214)
 summary(topmod.spprich218)
 
 vis.gam(topmod.spprich220, plot.type="contour", color="terrain")
+vis.gam(topmod.spprich218, plot.type="contour", color="terrain")
 vis.gam(topmod.spprich230, plot.type="contour", color="terrain")
 plot(topmod.spprich214, plot.type="contour", color="terrain")
-vis.gam(topmod.spprich218, plot.type="contour", color="terrain")
+
 
 
 
