@@ -13,9 +13,10 @@ library(RColorBrewer)
 library(broom)
 library(colorspace)
 library(scales)
+library(here)
 
+source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
 
-source("Analysis/thesis2019_Ch1_1-import&cleanup.R")
 
 #this pulls in the following (relevant) dataframes:
 head(catchenviron) # all catch data, left joined with environ data
@@ -369,4 +370,7 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), ce
   theme_bw() + theme(panel.grid.minor = element_blank()) +
   geom_text(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
               mutate(species = rownames(.)), 
-            aes(x=MDS1, y=MDS2, label = species), cex=5)
+            aes(x=MDS1, y=MDS2, label = species), cex=5) +
+  geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
+                 cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
+               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2) 

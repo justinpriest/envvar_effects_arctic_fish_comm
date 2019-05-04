@@ -8,8 +8,9 @@
 library(mgcv)
 library(strucchange)
 library(ggsidekick) #devtools::install_github("seananderson/ggsidekick")
+library(here)
 
-source("Analysis/thesis2019_Ch1_4-PERMANOVA.R")
+source(here::here("Analysis/thesis2019_Ch1_4-PERMANOVA.R"))
 
 
 summary(lm(MDS1 ~ Year, data = nmdspoints.biwk)) # marginal
@@ -22,12 +23,18 @@ nmdspoints.biwk %>% group_by(Station) %>% do(model = lm(MDS1 ~ Year, data = .)) 
   tidy(model) # marginal at 218, not signif at any others
 nmdspoints.biwk %>% group_by(Station) %>% do(model = lm(MDS2 ~ Year, data = .)) %>% 
   tidy(model) # significant at 220 and 214, marginal at 218
+nmdspoints.biwk %>% group_by(Station) %>% do(model = lm(MDS3 ~ Year, data = .)) %>% 
+  tidy(model) # significant at 220 and 214, marginal at 218
+
 
 # visualize this for MDS1 & MDS2
 ggplot(nmdspoints.biwk, aes(x=Year, y =MDS1, color = Station)) + 
   geom_point() + geom_smooth(method = "lm", se=FALSE)
 ggplot(nmdspoints.biwk, aes(x=Year, y =MDS2, color = Station)) + 
   geom_point() + geom_smooth(method = "lm", se=FALSE)
+ggplot(nmdspoints.biwk, aes(x=Year, y =MDS3, color = Station)) + 
+  geom_point() + geom_smooth(method = "lm", se=FALSE)
+
 
 #let's clean up the clutter and see if there is a non-linear trend
 ggplot(nmdspoints.biwk %>% group_by(Year, Station) %>% summarise(MDS1 = mean(MDS1)), 
@@ -42,6 +49,13 @@ ggplot(nmdspoints.biwk %>% group_by(Year, Station) %>% summarise(MDS2 = mean(MDS
   scale_color_manual(values =  brewer.pal(4, "Set2")) +
   theme_bw() + theme(panel.grid.minor = element_blank()) 
 # looks mostly linear but we'll test that soon
+
+ggplot(nmdspoints.biwk %>% group_by(Year, Station) %>% summarise(MDS3 = mean(MDS3)), 
+       aes(x=Year, y =MDS3, color = Station)) + 
+  geom_line(cex=2.5) + geom_smooth(method = "lm", se=FALSE, cex=1.25) +
+  scale_color_manual(values =  brewer.pal(4, "Set2")) +
+  theme_bw() + theme(panel.grid.minor = element_blank()) 
+
 
 
 #Let's fit a nested effects linear model to account for Station effects by Year
@@ -66,8 +80,33 @@ summary(gam(MDS1 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk))
 summary(gam(MDS2 ~ Year + Station + biweekly, data = nmdspoints.biwk))
 summary(gam(MDS2 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk))
 summary(gam(MDS3 ~ Year + Station + biweekly, data = nmdspoints.biwk))
-summary(gam(MDS3 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk))
+summary(gam(MDS3 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk)) #left these as gam() to compare deviance better
 # summary: MDS1&2 have better fit with nonlinear, no diff MDS3 (measured by deviance)
+
+
+#Plot predicted GAM output
+gampredict.df <- expand.grid(Year=2001:2018, Station=c("214", "218", "220", "230"), biweekly=1:4)
+
+MDS1.gam <- gam(MDS1 ~ s(Year) + Station + as.numeric(biweekly), data = nmdspoints.biwk)
+gampredict.df$pred.MDS1 <- predict.gam(MDS1.gam, gampredict.df)
+ggplot(gampredict.df, aes(x=Year, y=pred.MDS1, color=Station)) + 
+  geom_point() + geom_smooth(se=FALSE, cex=2.5) + 
+  scale_color_manual(values =  brewer.pal(4, "Set2")) 
+summary(MDS1.gam)
+
+MDS2.gam <- gam(MDS2 ~ s(Year) + Station + as.numeric(biweekly), data = nmdspoints.biwk)
+gampredict.df$pred.MDS2 <- predict.gam(MDS2.gam, gampredict.df)
+ggplot(gampredict.df, aes(x=Year, y=pred.MDS2, color=Station)) +
+  geom_point() + geom_smooth(se=FALSE, cex=2.5) + 
+  scale_color_manual(values =  brewer.pal(4, "Set2")) 
+summary(MDS2.gam)
+
+MDS3.lm <- lm(MDS3 ~ Year*Station + as.numeric(biweekly) - 1, data = nmdspoints.biwk) # we can let this vary by stn
+gampredict.df$pred.MDS3 <- predict(MDS3.lm, gampredict.df)
+ggplot(gampredict.df, aes(x=Year, y=pred.MDS3, color=Station)) +
+  geom_point() + geom_smooth(se=FALSE, cex=2.5) + 
+  scale_color_manual(values =  brewer.pal(4, "Set2")) # Same output as earlier
+summary(MDS3.lm)
 
 
 

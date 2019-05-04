@@ -12,7 +12,7 @@ library(mgcv)
 library(gratia) # devtools::install_github('gavinsimpson/gratia')
 library(directlabels)
 
-source("Analysis/thesis2019_Ch1_1-import&cleanup.R")
+source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
 
 
 #############################

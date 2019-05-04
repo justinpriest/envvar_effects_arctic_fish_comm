@@ -8,19 +8,36 @@ This document produces figures and tables for the report then outputs it to MS W
 The tables from the Word doc can then be copied into Excel for final formatting to remain consistent. 
 
 
-```{r loading}
+```{r loading, echo = FALSE, results = FALSE, message = FALSE, warning=FALSE}
 #Figures and Tables
 
 
 library(corrplot)
 library(knitr)
 library(kableExtra)
+library(here)
+library(extrafont)
+# font_import()  #this only needs to be run once
+loadfonts(device="win") #change for mac users
+
+
 
 # Later can make an RDA file to save output from all of these
-source("Analysis/thesis2019_Ch1_2-speciesrichness.R")
-source("Analysis/thesis2019_Ch1_3-rarespecies.R")
-source("Analysis/thesis2019_Ch1_4-PERMANOVA.R")
-source("Analysis/thesis2019_Ch1_5-TimeSeries.R")
+source(here::here("Analysis/thesis2019_Ch1_2-speciesrichness.R"))
+source(here::here("Analysis/thesis2019_Ch1_3-rarespecies.R"))
+source(here::here("Analysis/thesis2019_Ch1_4-PERMANOVA.R"))
+source(here::here("Analysis/thesis2019_Ch1_5-TimeSeries.R"))
+
+
+# default report theme for ggplot, use by adding "+ report_theme()" to ggplot call
+report_theme <- function() {
+  theme_bw() + 
+    theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank(), 
+          text=element_text(family="Times New Roman", size=12), 
+          axis.text.x = element_text(angle = 35, hjust = 1),  
+          panel.border = element_blank(), 
+          axis.line = element_line())
+}
 
 
 ```
@@ -42,7 +59,7 @@ lower.tri(env.biwk.corr, diag = FALSE)
 
 ```{r Table1, echo = FALSE, message = FALSE, warning=FALSE}
 # Total Catch Table
-catchtable <- as_tibble(expand.grid(Year=2001:2018, 
+catchtable <- as_tibble(expand.grid(Year=2001:2018, # need this part to put in blank yr/stn/species catches
                                     biweekly=1:4, 
                                     Species=unique(catchenviron$Species))) %>% 
   left_join(catchenviron, 
@@ -52,14 +69,17 @@ catchtable <- as_tibble(expand.grid(Year=2001:2018,
   group_by(Species, Year, biweekly) %>% summarise(biwkCatch = sum(totcount)) %>% 
   mutate(biwkCatch = replace_na(biwkCatch, 0)) %>% #replace NAs with 0
   group_by(Species) %>% 
-  summarise(MeanCatch = mean(biwkCatch), MinCatch = min(biwkCatch), MaxCatch = max(biwkCatch),
+  summarise(TotalCatch = sum(biwkCatch), MeanCatch = mean(biwkCatch), 
+            MinCatch = min(biwkCatch), MaxCatch = max(biwkCatch),
             PercentPresent = 1-(sum(if_else(biwkCatch == 0, 1, 0)) / (4*18))) %>% 
   left_join(spplookup, by = c("Species" = "Species")) %>% ungroup() %>% 
-  dplyr::select(commonname, MeanCatch, MinCatch, MaxCatch, PercentPresent) %>%
+  mutate(rarespecies = if_else(Species %in% keepspp, "*", "")) %>%
+  dplyr::select(commonname, TotalCatch, MinCatch, MaxCatch, MeanCatch, PercentPresent, rarespecies) %>%
   arrange(commonname) %>% rename(Species = commonname) %>% 
-  kableExtra::kable(format.args = list(big.mark = ","), digits = c(0, 1, 0, 0, 3))
+  kableExtra::kable(format.args = list(big.mark = ","), digits = c(0, 0, 0, 0, 1, 3,0))
 
 catchtable
+
 ```
 
 
@@ -71,3 +91,41 @@ data.frame(permanova.ann)
 data.frame(permanova.biwk)
 
 ```
+
+
+
+
+
+```{r envtimeseries}
+
+catchenviron %>% group_by(Species) %>% summarise(sum(totcount)) %>% kable()
+
+
+pru.env.biwk %>% mutate(windspd.scale =scale(biwkmeanspeed_kph))
+
+scaledenv.ann <- pru.env.ann %>% group_by(Year) %>% 
+  summarise_at(vars(annwindspeed_kph:annwinddir_ew), mean, na.rm = TRUE) %>% #annual means, all stns included
+  mutate_at(vars(annwindspeed_kph:annwinddir_ew), scale)
+
+scaledenv.ann %>% gather(key = "env_var", "scaled_value", -Year)
+
+ggplot(scaledenv.ann %>% dplyr::select(-annwinddir) %>% gather(key = "env_var", "scaled_value", -Year), 
+       aes(x=as.numeric(Year)+2000, y=scaled_value, color=env_var)) + geom_line(cex=1.5) +
+  scale_x_continuous(breaks= seq(2001, 2018)) +
+  labs(x="", y="Scaled value, mu=0, sd=1") + 
+  report_theme()
+  
+
+
+scaledenv.ann.stn <- pru.env.ann %>% group_by(Year, Station) %>% 
+  summarise_at(vars(annwindspeed_kph:annwinddir_ew), mean, na.rm = TRUE) %>% #annual means, all stns included
+  mutate_at(vars(annwindspeed_kph:annwinddir_ew), scale)
+
+ggplot(scaledenv.ann.stn %>% dplyr::select(Year, Station, annsal_ppt, anntemp_c) %>% 
+       gather(key = "env_var", "scaled_value", -c(Year, Station)), 
+       aes(x=as.numeric(Year)+2000, y=scaled_value, color=Station)) + 
+  geom_line(cex=1.5) +
+  facet_wrap(~env_var)
+
+```
+

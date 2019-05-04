@@ -16,10 +16,11 @@ library(tidyr)
 library(tibble)
 library(lubridate)
 library(CircStats)
+library(here)
 
 
 # Read in the length, catch, and environmental data, plus species lookup table
-load("Data/PrudhoeCatch&LengthDataset_2001-2018_Version11.Rdata")
+load(here::here("Data/PrudhoeCatch&LengthDataset_2001-2018_Version11.Rdata"))
 
 #Will need this later
 all.len <- all.len %>% mutate(Net = paste0(Station, Side))
@@ -78,7 +79,7 @@ addbiwknum <- function(dataframename){
 # These data were downloaded in 10-year increments (LCD CSV). 
 # In appendix (at end of this doc, I summarized hourly data into a daily summary)
 
-deadhorsewind <- read.csv("Data/deadhorsewind_2001-2018_daily_summarized.csv", header = TRUE, 
+deadhorsewind <- read.csv(here::here("Data/deadhorsewind_2001-2018_daily_summarized.csv"), header = TRUE, 
                           stringsAsFactors = FALSE) %>% 
   mutate(Date = ymd(as.POSIXct(Date, format = "%m/%d/%Y")),
          Year = year(Date),
@@ -94,7 +95,7 @@ deadhorsewind <- read.csv("Data/deadhorsewind_2001-2018_daily_summarized.csv", h
 # Data from USGS https://waterdata.usgs.gov/nwis/uv/?site_no=15908000
 # https://nwis.waterdata.usgs.gov/usa/nwis/uv/?cb_00060=on&format=rdb&site_no=15908000&period=&begin_date=2001-01-01&end_date=2018-09-01
 
-sagdisch <- read.csv("Data/SagDischargeDaily_2001-2018.csv", header = TRUE) %>%
+sagdisch <- read.csv(here::here("Data/SagDischargeDaily_2001-2018.csv"), header = TRUE) %>%
   mutate(datetime = as.POSIXct(paste0(date, " ", time), format = "%m/%d/%Y %H:%M"),
          Date = as_date(datetime),
          hour = hour(datetime) ) %>%

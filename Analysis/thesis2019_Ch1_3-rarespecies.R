@@ -1,10 +1,11 @@
 # Logistic binomial regression 
 
 
-
-source("Analysis/thesis2019_Ch1_1-import&cleanup.R")
-
+library(here)
 library(ggplot2)
+source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
+
+
 
 
 # Data Import and Cleanup
@@ -62,7 +63,7 @@ ggplot(data=newdf %>% filter(Station=="214", Year==2006), aes(x=biweekly, y = pr
 ggplot(data=rarespp.biwk.pres, aes(x=biweekly, y=pres.abs)) + 
   geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
   geom_smooth(method = "glm", method.args = list(family = "binomial")) +
-  ggtitle("All 15 Rare Species Combined")
+  ggtitle("All 15 Rare Species Combined") 
 
 
 
