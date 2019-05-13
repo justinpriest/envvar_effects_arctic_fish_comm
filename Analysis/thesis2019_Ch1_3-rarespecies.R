@@ -3,6 +3,7 @@
 
 library(here)
 library(ggplot2)
+library(visreg)
 source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
 
 
@@ -69,19 +70,21 @@ ggplot(data=rarespp.biwk.pres, aes(x=biweekly, y=pres.abs)) +
 
 binom.analyzebyspp <- function(sppfilter){
   .raresppfilter <- rarespp.biwk.pres %>% filter(Species == sppfilter)
-  print(summary(glm(pres.abs ~ Year + biweekly + Station, family = "binomial", 
-                    data = .raresppfilter)))
-  print(ggplot(data=.raresppfilter, aes(x=biweekly, y=pres.abs)) + 
-          geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
-          geom_smooth(method = "glm", method.args = list(family = "binomial")) +
-          ggtitle(paste0(sppfilter, " by biweekly")) )
-  print(ggplot(data=.raresppfilter, aes(x=Year, y=pres.abs)) + 
-        geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
-        geom_smooth(method = "glm", method.args = list(family = "binomial")) +
-        ggtitle(paste0(sppfilter, " by Year")) )
-  
+  .fit <- glm(pres.abs ~ Year + biweekly + Station, family = "binomial", 
+      data = .raresppfilter)
+  print(summary(.fit))
+  # print(ggplot(data=.raresppfilter, aes(x=biweekly, y=pres.abs)) + 
+  #         geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
+  #         geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  #         ggtitle(paste0(sppfilter, " by biweekly")) )
+  # print(ggplot(data=.raresppfilter, aes(x=Year, y=pres.abs)) + 
+  #       geom_jitter(width = 0.45, height = 0, alpha = 0.4) +
+  #       geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  #       ggtitle(paste0(sppfilter, " by Year")) ) #keep code in case we need to reuse later
+  # Compare the confidence bands from visreg. Much wider, and more accurate
+  print(visreg(.fit, "Year", scale="response", jitter=T, gg=T, ylab="Probability of Occurrence") + ggtitle(sppfilter) )
+  print(visreg(.fit, "biweekly", scale="response", jitter=T, gg=T, ylab="Probability of Occurrence") + ggtitle(sppfilter) )
 }
-
 
 
 
@@ -103,5 +106,103 @@ binom.analyzebyspp("WSGL") #insig
 
 
 
+#include only species with significant changes in year (but also explore signif biweekly spp)
+
+fit_rare <- glm(pres.abs ~ Year + biweekly + Species + Station - 1, family = binomial, 
+           data = rarespp.biwk.pres %>% filter(Species %in% c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC"))) 
+summary(fit_rare)
+
+fit_rare_BRBT <- glm(pres.abs ~ Year + biweekly + Station, family = binomial, 
+                data = rarespp.biwk.pres %>% filter(Species == "BRBT")) 
+summary(fit_rare_BRBT)
+
+fit_rare_BRCS <- glm(pres.abs ~ Year + biweekly + Station, family = binomial, 
+                     data = rarespp.biwk.pres %>% filter(Species == "BRCS")) 
+summary(fit_rare_BRCS)
+
+fit_rare_SLSC <- glm(pres.abs ~ Year + biweekly + Station, family = binomial, 
+                     data = rarespp.biwk.pres %>% filter(Species == "SLSC")) 
+summary(fit_rare_SLSC)
 
 
+ggplot(data=rarespp.biwk.pres %>% filter(Species %in% c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC")), 
+       aes(x=biweekly, y=pres.abs, color=Species)) + 
+  geom_jitter(width = 0.45, height = 0, shape=124, size =8) +
+  ggtitle("new title") 
+
+
+
+
+
+predictedvals <- expand.grid(Year = 2001:2018, biweekly = 1:4, 
+                             #Species = c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC"),
+                             Station = c("230", "214", "218", "220"))
+predictedvals$predval_BRBT <- predict.glm(fit_rare_BRBT, predictedvals, type = "response")
+predictedvals$predse_BRBT <- predict.glm(fit_rare_BRBT, predictedvals, type = "response", se=T)$se.fit
+predictedvals$predval_BRCS <- predict.glm(fit_rare_BRCS, predictedvals, type = "response")
+predictedvals$predse_BRCS <- predict.glm(fit_rare_BRCS, predictedvals, type = "response", se=T)$se.fit
+predictedvals$predval_SLSC <- predict.glm(fit_rare_SLSC, predictedvals, type = "response")
+predictedvals$predse_SLSC <- predict.glm(fit_rare_SLSC, predictedvals, type = "response", se=T)$se.fit
+
+predictedvals.year <- predictedvals %>% group_by(Year) %>% 
+  summarise(predval_BRBT=mean(predval_BRBT),
+            predval_BRCS=mean(predval_BRCS),
+            predval_SLSC=mean(predval_SLSC),
+            predse_BRBT=mean(predse_BRBT), 
+            predse_BRCS=mean(predse_BRCS),
+            predse_SLSC=mean(predse_SLSC))
+
+
+
+ggplot(data = predictedvals.year) +
+  geom_ribbon(aes(x=Year, ymin=predval_BRBT-predse_BRBT, ymax=predval_BRBT+predse_BRBT), fill="gray", alpha=0.5) +
+  geom_ribbon(aes(x=Year, ymin=predval_BRCS-predse_BRCS, ymax=predval_BRCS+predse_BRCS), fill="gray", alpha=0.5) +
+  geom_ribbon(aes(x=Year, ymin=predval_SLSC-predse_SLSC, ymax=predval_SLSC+predse_SLSC), fill="gray", alpha=0.5) +
+  geom_line(aes(x=Year, y = predval_BRBT), cex=2, color = "black") +
+  geom_line(aes(x=Year, y = predval_BRCS), cex=2, color = "red") +
+  geom_line(aes(x=Year, y = predval_SLSC), cex=2, color = "dark gray") +
+  scale_y_continuous(limits = c(0,0.2)) +
+  theme_bw() # need to gather and put in long format if we want to direct label
+
+#predictedvals.year %>% gather(Species, val, -Year)
+
+
+
+
+
+##########################
+
+#Other exploratory plots
+predictedvals <- expand.grid(Year = 2001:2018, biweekly = 1:4, 
+                             Species = c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC"),
+                             Station = c("230", "214", "218", "220"))
+predictedvals.year <- predictedvals %>% group_by(Species, Year) %>% summarise(predval=mean(predval))
+predictedvals.biwk <- predictedvals %>% group_by(Species, biweekly) %>% summarise(predval=mean(predval))
+
+
+
+
+# ggplot() +
+#   geom_jitter(data=rarespp.biwk.pres %>% filter(Species %in% c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC")), 
+#               aes(x=Year, y=pres.abs), width = 0.45, height = 0, shape=124, size =6) +
+#   geom_line(data = predictedvals.year, aes(x=Year, y = predval, color = Species), cex=2)
+# 
+# 
+# ggplot() +
+#    # geom_jitter(data=rarespp.biwk.pres %>% filter(Species %in% c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC")), 
+#    #             aes(x=biweekly, y=pres.abs), width = 0.45, alpha = 0.8, height = 0, shape=124, size = 4) +
+#   geom_line(data = predictedvals.biwk, aes(x=biweekly, y = predval, color = Species, linetype=Species), cex=2) +
+#   scale_linetype_manual(values = c("dotdash", "solid","solid", "dotdash","solid")) +
+#   scale_color_manual(values = c( "#000000", "#000000", "#bababa", "#4f4f4f", "#4f4f4f")) +
+#   #scale_y_continuous(limits = c(0,0.25)) +
+#   theme_bw()
+# 
+# 
+# ggplot() +
+#   # geom_jitter(data=rarespp.biwk.pres %>% filter(Species %in% c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC")), 
+#   #             aes(x=Year, y=pres.abs), width = 0.45, alpha = 0.8, height = 0, shape=124, size = 4) +
+#   geom_line(data = predictedvals.year, aes(x=Year, y = predval, color = Species, linetype=Species), cex=2) +
+#   scale_linetype_manual(values = c("dotdash", "solid","solid", "dotdash","solid")) +
+#   scale_color_manual(values = c( "#000000", "#000000", "#bababa", "#4f4f4f", "#4f4f4f")) +
+#   scale_y_continuous(limits = c(0,0.1)) +
+#   theme_bw()

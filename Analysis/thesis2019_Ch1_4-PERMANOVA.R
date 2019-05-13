@@ -191,13 +191,14 @@ ggplot(Spp.cor) +
 
 ## Bioenv ##
 # Bioenv is a mantel type test: which combination of environmental var explain it best
-bioenv(braydist ~ annwindspeed_kph + annwinddir + anndisch_cfs + 
+bioenv(braydist ~ as.numeric(Year) + annwindspeed_kph + annwinddir + anndisch_cfs + 
          annsal_ppt + anntemp_c, pru.env.ann, metric = "euclidean")
 # salinity and temp are the best predictors
 
-bioenv(braydist.biwk ~ biwkmeanspeed_kph + biwkmeandir + meandisch_cfs + 
-         Salin_Top + Temp_Top + winddir_ew, pru.env.biwk, metric = "euclidean")
-# salinity, temp, and wind direction are best subset of env variables
+bioenv(braydist.biwk ~ as.numeric(Year) + as.numeric(biweekly) + biwkmeanspeed_kph + biwkmeandir + 
+         meandisch_cfs + Salin_Top + Temp_Top + winddir_ew, pru.env.biwk, metric = "euclidean")
+# biweekly, salinity, temp are best subset of env variables
+# If w/o biweekly, wind dir E-W is also important
 
 
 
@@ -208,7 +209,8 @@ env.vectors.ann # Year and Station centroids are significant
 # also signif are temp, salin, and marginally wind direction
 
 env.vectors.biwk <- envfit(totalNMDS.biwk, pru.env.biwk %>% 
-                             dplyr::select(-winddir_ew, -Salin_Mid, -Temp_Mid), 
+                           #dplyr::select(-winddir_ew, -Salin_Mid, -Temp_Mid), 
+                           dplyr::select(Year, biweekly, Station, Salin_Top, Temp_Top),   
                            na.rm = TRUE, permutations = 999)
 env.vectors.biwk # salin, wind, and year are signif
 
@@ -234,13 +236,21 @@ ggplot(nmdspoints, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station)) +
 
 
 
+
+#CI Ellipses
+
 ggplot(nmdspoints.biwk, aes(x=MDS1, y = MDS2)) + geom_point(aes(color = Station), cex = 5) +
-  scale_x_continuous(limits = c(-0.23, 0.25)) + scale_y_continuous(limits = c(-0.18, 0.25)) +
+  stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2) +
+  scale_x_continuous(limits = c(-0.3, 0.3)) + scale_y_continuous(limits = c(-0.25, 0.19)) +
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
                  cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2) +#need to fix scale (mult by 5?)
+               aes(x=0, xend=NMDS1 * (r2^0.5)/2.8, y=0, yend=NMDS2 * (r2^0.5)/2.8), cex = 2) +#need to fix scale (mult by 5?)
   scale_color_manual(values =  brewer.pal(4, "Set2")) +
   theme_bw() + theme(panel.grid.minor = element_blank()) 
+
+
+
+
 
 
 ###############
@@ -249,7 +259,7 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y = MDS2)) + geom_point(aes(color = Station)
 # following example from vegan tutorial, page 33
 # http://cc.oulu.fi/~jarioksa/opetus/metodi/vegantutor.pdf
 
-############ !!!!!!!!!!!!!!!!!!!!!!!!
+# If including Annual in final analysis,
 # Update to sq rt transform the env var for annual
 # pru.env.biwk.std <- pru.env.biwk.sub
 # for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
@@ -306,7 +316,7 @@ pru.env.biwk.std <- pru.env.biwk.sub
 for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
   pru.env.biwk.std[i] <- ((pru.env.biwk.sub[i]+1)^0.5)/max(((pru.env.biwk.sub[i]+1)^0.5))}
 #using square root tranform
-
+# This standardizes each variable to itself
 
 
 betad.biwk <- betadiver(catchmatrix.biwk.stdtrans.sub , "z") 
@@ -324,14 +334,16 @@ adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cf
 # same general trends, but the model fits better (resids dropped from 0.54 to 0.51), Stn R2 up
 # interaction btwn seasonal & station
 
-permanova.biwk <- adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station + biweekly + #Station*biweekly + 
-          Temp_Top + Salin_Top + meandisch_cfs + winddir_ew, 
-        pru.env.biwk.std, perm=999, by = "margin")
+permanova.biwk <- adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station + as.factor(biweekly) + #Station*biweekly + 
+                          Temp_Top + Salin_Top, 
+                          pru.env.biwk.std, perm=999, by = "margin")
 permanova.biwk
 # everything is very significant. Not sure what this means
 # BIWEEKLY AS A FACTOR?
 
-
+adonis(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + Station + as.factor(biweekly) + Year, 
+       pru.env.biwk.std, perm=999, by = "terms") 
+# Sequential just to show how much effect Year has, once all other variables are accounted for
 
 
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")
@@ -358,13 +370,11 @@ summary(simper(catchmatrix.biwk.stdtrans, pru.env.biwk.std$Station))
 # Seems like THSB, RDWF, PINK, PCHG are most common? Hard to tell
 
 
-# Now overlay with the Species scores from wascores()
-ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), cex=5) + 
+# Final Analysis
+EWsimper <- data.frame((summary(simper(catchmatrix.biwk.stdtrans, (pru.env.biwk.std %>% 
+                        mutate(EW_stn = ifelse(Station==230 | Station == 214, "EastStn", "WestStn")))$EW_stn )))$ EastStn_WestStn )
+EWsimper
 
-  theme_bw() + theme(panel.grid.minor = element_blank()) +
-  geom_text(data = data.frame(wascores(totalNMDS$points, w = catchmatrix.std)) %>% 
-              mutate(species = rownames(.)), 
-            aes(x=MDS1, y=MDS2, label = species))
 
 ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), cex=5) + 
   theme_bw() + theme(panel.grid.minor = element_blank()) +
