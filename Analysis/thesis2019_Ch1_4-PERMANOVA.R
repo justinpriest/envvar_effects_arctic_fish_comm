@@ -31,7 +31,7 @@ head(catchmatrix.day) # each row is a day/station, cols are species
 head(catchmatrix.day.std)
 head(catchmatrix.biwk.stdtrans)
 
-
+set.seed(7787) # Need to reproduce nMDS plots 
 #################
 ### Section 1: Test for changes in community assemblage structure
 #################
@@ -172,6 +172,11 @@ for(i in colnames(catchmatrix.biwk.stdtrans)){
 }
 Spp.cor
 
+topcorrspp <-Spp.cor %>% 
+  mutate(totcorr = (abs(MDS1.corr) + abs(MDS2.corr) + abs(MDS3.corr)),
+         MDS12corr = (abs(MDS1.corr) + abs(MDS2.corr))) %>%
+  top_n(9, MDS12corr) %>% pull(Species)
+
 ggplot(Spp.cor) + 
   geom_tile(aes(x="MDS1", y=Species, fill = MDS1.corr)) + 
   geom_tile(aes(x="MDS2", y=Species, fill = MDS2.corr)) +
@@ -238,6 +243,7 @@ ggplot(nmdspoints, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station)) +
 
 
 #CI Ellipses
+finalcolors <- c("#b9a3c6", "#0063a0", "#8cc687", "#d86a6a")
 
 ggplot(nmdspoints.biwk, aes(x=MDS1, y = MDS2)) + geom_point(aes(color = Station), cex = 5) +
   stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2) +
@@ -245,10 +251,9 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y = MDS2)) + geom_point(aes(color = Station)
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
                  cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
                aes(x=0, xend=NMDS1 * (r2^0.5)/2.8, y=0, yend=NMDS2 * (r2^0.5)/2.8), cex = 2) +#need to fix scale (mult by 5?)
-  scale_color_manual(values =  brewer.pal(4, "Set2")) +
+  #scale_color_manual(values =  brewer.pal(4, "Set2")) +
+  scale_color_manual(values =  finalcolors) +
   theme_bw() + theme(panel.grid.minor = element_blank()) 
-
-
 
 
 
@@ -338,7 +343,7 @@ permanova.biwk <- adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station + 
                           Temp_Top + Salin_Top, 
                           pru.env.biwk.std, perm=999, by = "margin")
 permanova.biwk
-# everything is very significant. Not sure what this means
+# everything is very significant. 
 # BIWEEKLY AS A FACTOR?
 
 adonis(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + Station + as.factor(biweekly) + Year, 
@@ -376,11 +381,19 @@ EWsimper <- data.frame((summary(simper(catchmatrix.biwk.stdtrans, (pru.env.biwk.
 EWsimper
 
 
-ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), cex=5) + 
+ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
+  geom_point(aes(color=Station), cex=5) + 
+  stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2) +
   theme_bw() + theme(panel.grid.minor = element_blank()) +
-  geom_text(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
-              mutate(species = rownames(.)), 
-            aes(x=MDS1, y=MDS2, label = species), cex=5) +
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
-                 cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2) 
+               cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
+               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2) +
+  geom_label(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
+              mutate(species = rownames(.)) %>%
+              filter(species %in% topcorrspp), 
+            aes(x=MDS1, y=MDS2, label = species), cex=5) +
+  scale_color_manual(values =  finalcolors) +
+  annotate("text", x=0.21, y=0.15, label= "Salinity") +
+  annotate("text", x=-0.05, y=0.01, label= "Year") +
+  annotate("text", x=0.2, y=-0.13, label= "Biweekly") +
+  annotate("text", x=0.02, y=-0.07, label= "Temp") 

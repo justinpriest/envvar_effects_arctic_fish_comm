@@ -129,3 +129,29 @@ ggplot(scaledenv.ann.stn %>% dplyr::select(Year, Station, annsal_ppt, anntemp_c)
 
 ```
 
+
+```{r envvar}
+pru.env.biwk %>% #group_by(Year, biweekly, Station) %>% 
+  summarise(min =mean(biwkmeanspeed_kph))
+min(pru.env.biwk$biwkmeanspeed_kph)
+max(pru.env.biwk$biwkmeanspeed_kph)
+mean(pru.env.biwk$biwkmeanspeed_kph)
+
+mean(pru.env.biwk$biwkmeandir)
+
+pru.env.biwk %>% ungroup() %>%
+  summarise(mean = ((circ.mean(2*pi*na.omit(biwkmeandir)/360))*(360 / (2*pi))) %%360)
+
+min(pru.env.biwk$meandisch_cfs)
+max(pru.env.biwk$meandisch_cfs)
+mean(pru.env.biwk$meandisch_cfs)
+
+min(pru.env.biwk$Temp_Top, na.rm = TRUE)
+max(pru.env.biwk$Temp_Top, na.rm = TRUE)
+mean(pru.env.biwk$Temp_Top, na.rm = TRUE)
+
+min(pru.env.biwk$Salin_Top, na.rm = TRUE)
+max(pru.env.biwk$Salin_Top, na.rm = TRUE)
+mean(pru.env.biwk$Salin_Top, na.rm = TRUE)
+
+```

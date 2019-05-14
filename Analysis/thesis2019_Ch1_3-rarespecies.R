@@ -154,15 +154,25 @@ predictedvals.year <- predictedvals %>% group_by(Year) %>%
 
 
 
-ggplot(data = predictedvals.year) +
-  geom_ribbon(aes(x=Year, ymin=predval_BRBT-predse_BRBT, ymax=predval_BRBT+predse_BRBT), fill="gray", alpha=0.5) +
-  geom_ribbon(aes(x=Year, ymin=predval_BRCS-predse_BRCS, ymax=predval_BRCS+predse_BRCS), fill="gray", alpha=0.5) +
-  geom_ribbon(aes(x=Year, ymin=predval_SLSC-predse_SLSC, ymax=predval_SLSC+predse_SLSC), fill="gray", alpha=0.5) +
+p <- ggplot(data = predictedvals.year) +
+  geom_ribbon(aes(x=Year, ymin=predval_BRBT-predse_BRBT, ymax=predval_BRBT+predse_BRBT), fill="gray", alpha=0.45) +
+  geom_ribbon(aes(x=Year, ymin=predval_BRCS-predse_BRCS, ymax=predval_BRCS+predse_BRCS), fill="gray", alpha=0.45) +
+  geom_ribbon(aes(x=Year, ymin=predval_SLSC-predse_SLSC, ymax=predval_SLSC+predse_SLSC), fill="gray", alpha=0.45) +
   geom_line(aes(x=Year, y = predval_BRBT), cex=2, color = "black") +
   geom_line(aes(x=Year, y = predval_BRCS), cex=2, color = "red") +
   geom_line(aes(x=Year, y = predval_SLSC), cex=2, color = "dark gray") +
+  scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
   scale_y_continuous(limits = c(0,0.2)) +
-  theme_bw() # need to gather and put in long format if we want to direct label
+  ylab("Predicted Biweekly Presence ") + xlab("") +
+  theme_bw() +
+  theme(text=element_text(family="Times New Roman", size=12), 
+        axis.text.x = element_text(angle = 35, hjust = 1)) +
+  annotate("text", x=2006, y=0.02, label= "Burbot") +
+  annotate("text", x=2015, y=0.015, label= "Slimy\nSculpin") +
+  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco") 
+p
+ggsave("Fig_rarespecies.eps", width = 6, height = 4, units = "in")
+# need to gather and put in long format if we want to direct label
 
 #predictedvals.year %>% gather(Species, val, -Year)
 

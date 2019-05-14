@@ -254,7 +254,12 @@ ggplot(modelpredict.gam(topmod.spprich, "Year", "biweekly"), aes(x=Year, y=biwee
   geom_dl(aes(label=..level..), method = list("top.pieces", cex=0.75), 
           stat="contour", breaks = seq(from=13, to=18.5, by=0.5)) +
   scale_fill_gradientn(colours= terrain.colors(6)) +
-  theme_bw()
+  scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
+  labs(fill = "Predicted\nSpecies\nRichness") +
+  theme_bw() +
+  theme(text=element_text(family="Times New Roman", size=12), 
+        axis.text.x = element_text(angle = 35, hjust = 1)) 
+
 
 
 
