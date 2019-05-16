@@ -31,7 +31,7 @@ head(catchmatrix.day) # each row is a day/station, cols are species
 head(catchmatrix.day.std)
 head(catchmatrix.biwk.stdtrans)
 
-set.seed(7787) # Need to reproduce nMDS plots 
+set.seed(7787) # Need to reproduce nMDS plots. Randomly chose this number
 #################
 ### Section 1: Test for changes in community assemblage structure
 #################
@@ -172,7 +172,7 @@ for(i in colnames(catchmatrix.biwk.stdtrans)){
 }
 Spp.cor
 
-topcorrspp <-Spp.cor %>% 
+topcorrspp <- Spp.cor %>% 
   mutate(totcorr = (abs(MDS1.corr) + abs(MDS2.corr) + abs(MDS3.corr)),
          MDS12corr = (abs(MDS1.corr) + abs(MDS2.corr))) %>%
   top_n(9, MDS12corr) %>% pull(Species)
@@ -239,21 +239,6 @@ ggplot(nmdspoints, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station)) +
                  cbind(r2=env.vectors.ann$vectors$r, pval =env.vectors.ann$vectors$pvals), 
                aes(x=0, xend=NMDS1 * r2, y=0, yend=NMDS2*r2))
 
-
-
-
-#CI Ellipses
-finalcolors <- c("#b9a3c6", "#0063a0", "#8cc687", "#d86a6a")
-
-ggplot(nmdspoints.biwk, aes(x=MDS1, y = MDS2)) + geom_point(aes(color = Station), cex = 5) +
-  stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2) +
-  scale_x_continuous(limits = c(-0.3, 0.3)) + scale_y_continuous(limits = c(-0.25, 0.19)) +
-  geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
-                 cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * (r2^0.5)/2.8, y=0, yend=NMDS2 * (r2^0.5)/2.8), cex = 2) +#need to fix scale (mult by 5?)
-  #scale_color_manual(values =  brewer.pal(4, "Set2")) +
-  scale_color_manual(values =  finalcolors) +
-  theme_bw() + theme(panel.grid.minor = element_blank()) 
 
 
 
@@ -381,19 +366,30 @@ EWsimper <- data.frame((summary(simper(catchmatrix.biwk.stdtrans, (pru.env.biwk.
 EWsimper
 
 
+
+#Final nMDS Plot
+finalcolors <- c("#b9a3c6", "#0063a0", "#8cc687", "#d86a6a")
+
+
+
 ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
   geom_point(aes(color=Station), cex=5) + 
-  stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2) +
-  theme_bw() + theme(panel.grid.minor = element_blank()) +
+  stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2, show.legend = FALSE) +
+  theme_bw() + theme(panel.grid.minor = element_blank(), 
+                     text=element_text(family="Times New Roman", size=12)) +
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
                cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2) +
+               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2, arrow = arrow(length = unit(12, "points"))) +
   geom_label(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
-              mutate(species = rownames(.)) %>%
-              filter(species %in% topcorrspp), 
-            aes(x=MDS1, y=MDS2, label = species), cex=5) +
+             mutate(species = rownames(.)) %>%
+             filter(species %in% topcorrspp), 
+             aes(x=MDS1, y=MDS2, label = species), family = "Times New Roman") +
   scale_color_manual(values =  finalcolors) +
-  annotate("text", x=0.21, y=0.15, label= "Salinity") +
-  annotate("text", x=-0.05, y=0.01, label= "Year") +
-  annotate("text", x=0.2, y=-0.13, label= "Biweekly") +
-  annotate("text", x=0.02, y=-0.07, label= "Temp") 
+  annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
+  annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
+  annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
+  annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") + 
+  geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
+            aes(x=NMDS1, y=NMDS2, label="X", color=Station), fill="#e8e8e8", cex=5, show.legend = FALSE)
+
+#ggsave("plotexports/Fig_biwknMDS.png", dpi = 300, width = 7.5, height = 5)

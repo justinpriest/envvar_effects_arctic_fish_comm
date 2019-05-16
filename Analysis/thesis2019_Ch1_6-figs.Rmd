@@ -21,7 +21,6 @@ library(extrafont)
 loadfonts(device="win") #change for mac users
 
 
-
 # Later can make an RDA file to save output from all of these
 source(here::here("Analysis/thesis2019_Ch1_2-speciesrichness.R"))
 source(here::here("Analysis/thesis2019_Ch1_3-rarespecies.R"))
@@ -100,6 +99,8 @@ data.frame(permanova.biwk)
 
 catchenviron %>% group_by(Species) %>% summarise(sum(totcount)) %>% kable()
 
+catchmatrix.biwk %>% mutate(numspp = rowSums(. >0)) %>% View()
+catchmatrix.biwk %>% mutate(numspp = rowSums(. >0)) %>% summarise(mean(numspp))
 
 pru.env.biwk %>% mutate(windspd.scale =scale(biwkmeanspeed_kph))
 
@@ -107,7 +108,7 @@ scaledenv.ann <- pru.env.ann %>% group_by(Year) %>%
   summarise_at(vars(annwindspeed_kph:annwinddir_ew), mean, na.rm = TRUE) %>% #annual means, all stns included
   mutate_at(vars(annwindspeed_kph:annwinddir_ew), scale)
 
-scaledenv.ann %>% gather(key = "env_var", "scaled_value", -Year)
+scaledenv.ann %>% dplyr::select(-annwinddir) %>% gather(key = "env_var", "scaled_value", -Year)
 
 ggplot(scaledenv.ann %>% dplyr::select(-annwinddir) %>% gather(key = "env_var", "scaled_value", -Year), 
        aes(x=as.numeric(Year)+2000, y=scaled_value, color=env_var)) + geom_line(cex=1.5) +
@@ -117,15 +118,26 @@ ggplot(scaledenv.ann %>% dplyr::select(-annwinddir) %>% gather(key = "env_var", 
   
 
 
+  
 scaledenv.ann.stn <- pru.env.ann %>% group_by(Year, Station) %>% 
   summarise_at(vars(annwindspeed_kph:annwinddir_ew), mean, na.rm = TRUE) %>% #annual means, all stns included
   mutate_at(vars(annwindspeed_kph:annwinddir_ew), scale)
 
 ggplot(scaledenv.ann.stn %>% dplyr::select(Year, Station, annsal_ppt, anntemp_c) %>% 
        gather(key = "env_var", "scaled_value", -c(Year, Station)), 
-       aes(x=as.numeric(Year)+2000, y=scaled_value, color=Station)) + 
-  geom_line(cex=1.5) +
-  facet_wrap(~env_var)
+       aes(x=as.numeric(Year)+2000, y=scaled_value)) + 
+  geom_line(aes(color=Station, linetype=Station), cex=1.5) +
+  scale_x_continuous(breaks = c(2001, 2005, 2010, 2015, 2018)) +
+  scale_linetype_manual(values=c("solid", "dotted", "solid", "dotted")) +
+  scale_color_manual(values = c("#000000", "#000000", "#727272", "#727272")) + 
+  labs(x="", y="Scaled value, mu=0, sd=1") +
+  facet_wrap(~env_var, labeller = as_labeller(c(`annsal_ppt` = "Salinity", `anntemp_c` = "Water Temperature"))) +
+  theme_bw() + 
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank(), 
+        text=element_text(family="Times New Roman", size=12), 
+        axis.text.x = element_text(angle = 35, hjust = 1),
+        strip.background = element_blank()) # could also do element_rect(fill="white")
+#ggsave("plotexports/Fig_envvar.png", dpi = 300, width = 7.5, height = 5)
 
 ```
 
