@@ -164,7 +164,7 @@ salinitygif <- ggplot(data = weeklysalinity, mapping = aes(x=week, y = meansal, 
 #   combined_gif <- c(combined_gif, combined)
 # }
 # combined_gif
-save_animation(combined_gif, "combined.gif")
+#save_animation(combined_gif, "combined.gif")
 
 
 
@@ -255,11 +255,11 @@ ggplot(modelpredict.gam(topmod.spprich, "Year", "biweekly"), aes(x=Year, y=biwee
           stat="contour", breaks = seq(from=13, to=18.5, by=0.5)) +
   scale_fill_gradientn(colours= terrain.colors(6)) +
   scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
-  labs(fill = "Predicted\nSpecies\nRichness") +
+  labs(x="", y="Biweekly", fill = "Predicted\nSpecies\nRichness") +
   theme_bw() +
   theme(text=element_text(family="Times New Roman", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1)) 
-
+#ggsave("plotexports/Fig_spprich.png", dpi = 300, width = 6.5, height = 4.33)
 
 
 

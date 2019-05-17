@@ -58,26 +58,26 @@ lower.tri(env.biwk.corr, diag = FALSE)
 
 ```{r Table1, echo = FALSE, message = FALSE, warning=FALSE}
 # Total Catch Table
-catchtable <- as_tibble(expand.grid(Year=2001:2018, # need this part to put in blank yr/stn/species catches
-                                    biweekly=1:4, 
-                                    Species=unique(catchenviron$Species))) %>% 
+catchtable <- expand(catchenviron %>% group_by(Year, Station, biweekly),
+       Species=unique(catchenviron$Species)) %>%# need this part to put in blank yr/stn/species catches
   left_join(catchenviron, 
-            by = c("Species" = "Species", "Year" = "Year", "biweekly" = "biweekly")) %>% 
+            by = c("Species" = "Species", "Year" = "Year", "biweekly" = "biweekly", "Station" = "Station")) %>% 
   # this first part makes sure to add in blank Year/biweek combos for species which are not frequently caught
   filter(Species != "UNKN" & Species != "LIPA" & Species != "HYCS"  & Species != "ELPT") %>%
-  group_by(Species, Year, biweekly) %>% summarise(biwkCatch = sum(totcount)) %>% 
+  group_by(Species, Year, biweekly, Station) %>% summarise(biwkCatch = sum(totcount)) %>% 
   mutate(biwkCatch = replace_na(biwkCatch, 0)) %>% #replace NAs with 0
   group_by(Species) %>% 
   summarise(TotalCatch = sum(biwkCatch), MeanCatch = mean(biwkCatch), 
             MinCatch = min(biwkCatch), MaxCatch = max(biwkCatch),
-            PercentPresent = 1-(sum(if_else(biwkCatch == 0, 1, 0)) / (4*18))) %>% 
+            PercentPresent = 1-(sum(if_else(biwkCatch == 0, 1, 0)) / 280)) %>% 
+  # there were 280 combos of stns,biwks, yrs (did not fish 8 yr/stn/biwks)
   left_join(spplookup, by = c("Species" = "Species")) %>% ungroup() %>% 
   mutate(rarespecies = if_else(Species %in% keepspp, "*", "")) %>%
-  dplyr::select(commonname, TotalCatch, MinCatch, MaxCatch, MeanCatch, PercentPresent, rarespecies) %>%
+  dplyr::select(commonname, TotalCatch, MeanCatch, MinCatch, MaxCatch, PercentPresent, rarespecies) %>%
   arrange(commonname) %>% rename(Species = commonname) %>% 
   kableExtra::kable(format.args = list(big.mark = ","), digits = c(0, 0, 0, 0, 1, 3,0))
 
-catchtable
+catchtable 
 
 ```
 
@@ -138,6 +138,16 @@ ggplot(scaledenv.ann.stn %>% dplyr::select(Year, Station, annsal_ppt, anntemp_c)
         axis.text.x = element_text(angle = 35, hjust = 1),
         strip.background = element_blank()) # could also do element_rect(fill="white")
 #ggsave("plotexports/Fig_envvar.png", dpi = 300, width = 7.5, height = 5)
+
+
+
+
+summary(lm(annsal_ppt ~ as.numeric(Year) + Station, data = pru.env.ann))
+summary(lm(anntemp_c ~ as.numeric(Year) + Station, data = pru.env.ann))
+summary(lm(annwindspeed_kph ~ as.numeric(Year), data = pru.env.ann))
+summary(lm(anndisch_cfs ~ as.numeric(Year), data = pru.env.ann))
+summary(lm(annwinddir_ew ~ as.numeric(Year), data = pru.env.ann))
+
 
 ```
 

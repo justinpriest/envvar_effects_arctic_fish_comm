@@ -171,7 +171,7 @@ p <- ggplot(data = predictedvals.year) +
   annotate("text", x=2015, y=0.015, label= "Slimy\nSculpin") +
   annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco") 
 p
-ggsave("Fig_rarespecies.eps", width = 6, height = 4, units = "in")
+ggsave("Fig_rarespecies.png", width = 6, height = 4, units = "in")
 # need to gather and put in long format if we want to direct label
 
 #predictedvals.year %>% gather(Species, val, -Year)
