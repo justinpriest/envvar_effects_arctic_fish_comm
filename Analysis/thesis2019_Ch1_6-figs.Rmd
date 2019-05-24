@@ -16,6 +16,8 @@ library(corrplot)
 library(knitr)
 library(kableExtra)
 library(here)
+library(scales)
+library(cowplot)
 library(extrafont)
 # font_import()  #this only needs to be run once
 loadfonts(device="win") #change for mac users
@@ -177,3 +179,50 @@ max(pru.env.biwk$Salin_Top, na.rm = TRUE)
 mean(pru.env.biwk$Salin_Top, na.rm = TRUE)
 
 ```
+
+
+
+
+```{r spprichness}
+spprichplot.biwk <- ggplot(predspeciesrich %>% group_by(biweekly) %>% 
+         summarise(pred.gam = mean(pred.gam),
+                   pred.gam.se = mean(pred.gam.se)), 
+       aes(x=biweekly, y=pred.gam)) +
+  geom_ribbon(aes(ymin=pred.gam-(2*pred.gam.se), ymax=pred.gam+(2*pred.gam.se)), alpha = 0.3) +
+  geom_line(cex=2) +
+  xlab("Biweekly Period") + ylab("Predicted Species Richness") +
+  scale_y_continuous(limits = c(13, 18.5), breaks = 13:18, oob=scales::rescale_none) +
+  theme_bw() +
+  theme(text=element_text(family="Times New Roman", size=12),
+        #panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank())
+
+
+
+spprichplot.year <- ggplot(predspeciesrich %>% group_by(Year) %>% 
+         summarise(pred.gam = mean(pred.gam),
+                   pred.gam.se = mean(pred.gam.se)), 
+       aes(x=Year, y=pred.gam)) +
+  geom_ribbon(aes(ymin=pred.gam-(2*pred.gam.se), ymax=pred.gam+(2*pred.gam.se)), alpha = 0.3) +
+  geom_line(cex=2) + 
+  xlab("Year") + ylab("")+ 
+  scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
+  scale_y_continuous(limits = c(13, 18.5), breaks = 13:18) +
+  theme_bw() +
+  theme(text=element_text(family="Times New Roman", size=12), 
+        axis.text.x = element_text(angle = 35, hjust = 1), 
+        axis.text.y=element_blank(),
+        #panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank()) #axis.ticks.y=element_blank()
+
+
+cowplot::plot_grid(spprichplot.biwk, spprichplot.year)
+
+
+
+
+
+```
+
+
+

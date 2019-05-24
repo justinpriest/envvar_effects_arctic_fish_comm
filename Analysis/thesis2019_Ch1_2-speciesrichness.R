@@ -11,6 +11,7 @@ library(MuMIn)
 library(mgcv)
 library(gratia) # devtools::install_github('gavinsimpson/gratia')
 library(directlabels)
+library(cowplot)
 
 source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
 
@@ -245,7 +246,6 @@ modelpredict.gam <- function(object, var1, var2, n = 50) {
   names(results)[1:2] <- c(var1, var2)
   results$pred.gam <- predict.gam(topmod.spprich, newdata = results)
   print(results)
-  
 }
 
 
@@ -260,6 +260,16 @@ ggplot(modelpredict.gam(topmod.spprich, "Year", "biweekly"), aes(x=Year, y=biwee
   theme(text=element_text(family="Times New Roman", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1)) 
 #ggsave("plotexports/Fig_spprich.png", dpi = 300, width = 6.5, height = 4.33)
+
+
+
+
+predspeciesrich <- expand.grid(Year = 2001:2018, biweekly = seq(from=1, to = 4, by=0.2))
+predspeciesrich$pred.gam <- predict.gam(topmod.spprich, newdata = predspeciesrich)
+predspeciesrich$pred.gam.se <- predict.gam(topmod.spprich, newdata = predspeciesrich, se = TRUE)$se.fit
+
+
+# Figure for this is in the figs RMD file
 
 
 

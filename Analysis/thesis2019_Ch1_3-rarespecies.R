@@ -4,6 +4,7 @@
 library(here)
 library(ggplot2)
 library(visreg)
+library(scales)
 source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
 
 
@@ -155,21 +156,21 @@ predictedvals.year <- predictedvals %>% group_by(Year) %>%
 
 
 p <- ggplot(data = predictedvals.year) +
-  geom_ribbon(aes(x=Year, ymin=predval_BRBT-predse_BRBT, ymax=predval_BRBT+predse_BRBT), fill="gray", alpha=0.45) +
   geom_ribbon(aes(x=Year, ymin=predval_BRCS-predse_BRCS, ymax=predval_BRCS+predse_BRCS), fill="gray", alpha=0.45) +
   geom_ribbon(aes(x=Year, ymin=predval_SLSC-predse_SLSC, ymax=predval_SLSC+predse_SLSC), fill="gray", alpha=0.45) +
+  geom_ribbon(aes(x=Year, ymin=predval_BRBT-predse_BRBT, ymax=predval_BRBT+predse_BRBT), fill="gray", alpha=0.45) +
+  geom_line(aes(x=Year, y = predval_BRCS), cex=2, color = "#a3a3a3") +
+  geom_line(aes(x=Year, y = predval_SLSC), cex=2, color = "#474747") +
   geom_line(aes(x=Year, y = predval_BRBT), cex=2, color = "black") +
-  geom_line(aes(x=Year, y = predval_BRCS), cex=2, color = "red") +
-  geom_line(aes(x=Year, y = predval_SLSC), cex=2, color = "dark gray") +
   scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
-  scale_y_continuous(limits = c(0,0.2)) +
+  scale_y_continuous(limits = c(0,0.2), oob=scales::rescale_none) +
   ylab("Predicted Biweekly Presence ") + xlab("") +
   theme_bw() +
   theme(text=element_text(family="Times New Roman", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1)) +
-  annotate("text", x=2006, y=0.02, label= "Burbot") +
   annotate("text", x=2015, y=0.015, label= "Slimy\nSculpin") +
-  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco") 
+  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco") +
+  annotate("text", x=2006, y=0.02, label= "Burbot")
 p
 ggsave("Fig_rarespecies.png", width = 6, height = 4, units = "in")
 # need to gather and put in long format if we want to direct label
@@ -183,11 +184,6 @@ ggsave("Fig_rarespecies.png", width = 6, height = 4, units = "in")
 ##########################
 
 #Other exploratory plots
-predictedvals <- expand.grid(Year = 2001:2018, biweekly = 1:4, 
-                             Species = c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC"),
-                             Station = c("230", "214", "218", "220"))
-predictedvals.year <- predictedvals %>% group_by(Species, Year) %>% summarise(predval=mean(predval))
-predictedvals.biwk <- predictedvals %>% group_by(Species, biweekly) %>% summarise(predval=mean(predval))
 
 
 
