@@ -168,11 +168,11 @@ p <- ggplot(data = predictedvals.year) +
   theme_bw() +
   theme(text=element_text(family="Times New Roman", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1)) +
-  annotate("text", x=2015, y=0.015, label= "Slimy\nSculpin") +
-  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco") +
-  annotate("text", x=2006, y=0.02, label= "Burbot")
+  annotate("text", x=2015.5, y=0.015, label= "Slimy\nSculpin", family = "Times New Roman") +
+  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco", family = "Times New Roman") +
+  annotate("text", x=2005.5, y=0.02, label= "Burbot", family = "Times New Roman")
 p
-ggsave("Fig_rarespecies.png", width = 6, height = 4, units = "in")
+ggsave("plotexports/Fig_rarespecies.png", width = 6, height = 4, units = "in")
 # need to gather and put in long format if we want to direct label
 
 #predictedvals.year %>% gather(Species, val, -Year)
