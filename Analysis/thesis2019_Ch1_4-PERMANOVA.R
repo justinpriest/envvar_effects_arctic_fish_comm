@@ -314,8 +314,8 @@ adonis(betad.biwk ~ Temp_Top + Salin_Top + winddir_ew + meandisch_cfs + Year + S
 #winddir slightly better than speed. Temp signif if added first, but mostly captured by salin
 # nonenviron explan var (Year, Stn, biweekly) are highly significant, esp seasonality (biweekly)
 # But Franz recommends using the Bray-Curtis dissimilarity matrix
-adonis2(catchmatrix.biwk.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + winddir_ew + Year + Station + biweekly, 
-        pru.env.biwk.std, perm=999, by = "margin") 
+# adonis2(catchmatrix.biwk.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + winddir_ew + Year + Station + biweekly, 
+#         pru.env.biwk.std, perm=999, by = "margin") # Turning this off for now for import speed
 # Seasonality, year, and station effects are the main contributors
 
 #check whether CPUE changes anything
