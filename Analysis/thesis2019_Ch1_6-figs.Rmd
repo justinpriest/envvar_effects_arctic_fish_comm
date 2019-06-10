@@ -23,6 +23,7 @@ library(extrafont)
 loadfonts(device="win") #change for mac users
 
 
+
 # Later can make an RDA file to save output from all of these
 source(here::here("Analysis/thesis2019_Ch1_2-speciesrichness.R"))
 source(here::here("Analysis/thesis2019_Ch1_3-rarespecies.R"))
