@@ -4,7 +4,7 @@ author: "Justin Priest"
 date: "May 1, 2019"
 output: word_document
 ---
-This document produces figures and tables for the report then outputs it to MS Word. 
+This document produces figures, tables, and misc summary results for the report then outputs it to MS Word. 
 The tables from the Word doc can then be copied into Excel for final formatting to remain consistent. 
 
 
