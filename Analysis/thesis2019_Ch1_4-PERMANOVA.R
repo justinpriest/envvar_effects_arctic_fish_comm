@@ -400,14 +400,19 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
 #ggsave("plotexports/Fig_biwknMDS.png", dpi = 300, width = 7.5, height = 5)
 
 
-finalcolors_BW <- c("#ffffff", "#000000", "#494949", "#9b9b9b")
+finalcolors_BW <- c("#d6d6d6", "#575757", "#9b9b9b", "#7a7a7a") #ellipse colors
+finalcolors_BW <- c("#494949", "#9b9b9b", "#494949", "#9b9b9b") #ellipse colors
 
 # Same but B&W Version
 ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
-  geom_point(aes(shape=Station), cex=5, color="black") + 
-  stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2, show.legend = FALSE) +
+  geom_point(aes(shape=Station, fill = Station), cex=4) + 
+  scale_shape_manual(values=c(21,24,24,21)) +
+  scale_fill_manual(values =  c("#494949", "#ffffff", "#494949", "#ffffff")) +
+  stat_ellipse(aes(group=Station, color=Station, lty=Station), size=2, show.legend = FALSE) + # turn on/off legend
+  scale_linetype_manual(values=c(1,2,1,2)) + # can change linetypes here
   theme_bw() + theme(panel.grid.minor = element_blank(), 
                      text=element_text(family="Times New Roman", size=12)) +
+  coord_cartesian(xlim = c(-0.31, 0.31), ylim = c(-0.27, 0.21), expand = FALSE) + # added slight above and below
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
                  cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
                aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2, arrow = arrow(length = unit(12, "points"))) +
@@ -415,14 +420,28 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
                mutate(species = rownames(.)) %>%
                filter(species %in% topcorrspp), 
              aes(x=MDS1, y=MDS2, label = species), family = "Times New Roman") +
-  scale_color_manual(values =  finalcolors_BW) +
-  annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
-  annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
-  annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
-  annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") + 
+  scale_color_manual(values =  finalcolors_BW) + #ellipse color
+  #annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
+  #annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
+  #annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
+  #annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") + 
+  annotate("text", x=0.2, y=-0.25, label= "Stress = 0.156", family = "Times New Roman") + 
+  geom_label(aes(x=0.2, y=-0.14, label = "Biweekly"), fill = "black", color = "white") +
+  geom_label(aes(x=0.21, y=0.15, label = "Salinity"), fill = "black", color = "white") +
+  geom_label(aes(x=-0.05, y=0.01, label = "Year"), fill = "black", color = "white") +
+  geom_label(aes(x=0.02, y=-0.07, label = "Temp"), fill = "black", color = "white") +
+  annotate("text", x=0.05, y=-0.26, label= "230", family = "Times New Roman") +
+  annotate("text", x=0.08, y=-0.19, label= "214", family = "Times New Roman") +
+  annotate("text", x=-0.18, y=0.13, label= "218", family = "Times New Roman") +
+  annotate("text", x=-0.15, y=0.19, label= "220", family = "Times New Roman") +
   geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
-             aes(x=NMDS1, y=NMDS2, label="X", color=Station), fill="#e8e8e8", cex=5, show.legend = FALSE)
+             aes(x=NMDS1, y=NMDS2, label="X"), color="black", fill="light gray", cex=4, show.legend = FALSE)
 
-#ggsave("plotexports/Fig_biwknMDS.png", dpi = 300, width = 7.5, height = 5)
+#ggsave("plotexports/Fig_biwknMDS_BW.png", dpi = 300, width = 7.5, height = 5)
+
+
+
+
+
 
 
