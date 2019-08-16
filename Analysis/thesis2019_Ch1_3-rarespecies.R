@@ -159,8 +159,8 @@ p <- ggplot(data = predictedvals.year) +
   geom_ribbon(aes(x=Year, ymin=predval_BRCS-predse_BRCS, ymax=predval_BRCS+predse_BRCS), fill="gray", alpha=0.45) +
   geom_ribbon(aes(x=Year, ymin=predval_SLSC-predse_SLSC, ymax=predval_SLSC+predse_SLSC), fill="gray", alpha=0.45) +
   geom_ribbon(aes(x=Year, ymin=predval_BRBT-predse_BRBT, ymax=predval_BRBT+predse_BRBT), fill="gray", alpha=0.45) +
-  geom_line(aes(x=Year, y = predval_BRCS), cex=2, color = "#a3a3a3") +
-  geom_line(aes(x=Year, y = predval_SLSC), cex=2, color = "#474747") +
+  geom_line(aes(x=Year, y = predval_BRCS), cex=2, color = "black") + # was #a3a3a3
+  geom_line(aes(x=Year, y = predval_SLSC), cex=2, color = "black") + # was #474747
   geom_line(aes(x=Year, y = predval_BRBT), cex=2, color = "black") +
   scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
   scale_y_continuous(limits = c(0,0.2), oob=scales::rescale_none) +

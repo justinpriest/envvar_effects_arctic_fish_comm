@@ -133,9 +133,9 @@ strucsummary(nmdspoints.biwk, station=218, mds = "MDS1")
 strucsummary(nmdspoints.biwk, station=230, mds = "MDS1")
 #Summary: For MDS1, all stations have 0 optimal TS breakpoints, though most have 1 breakpoint close behind
 
-strucsummary(nmdspoints.biwk, station=220, mds = "MDS2") # one optimal breakpoint
-strucsummary(nmdspoints.biwk, station=214, mds = "MDS2") # one optimal breakpoint
-strucsummary(nmdspoints.biwk, station=218, mds = "MDS2") # one optimal breakpoint
+strucsummary(nmdspoints.biwk, station=220, mds = "MDS2") # one optimal breakpoint at 2016
+strucsummary(nmdspoints.biwk, station=214, mds = "MDS2") # one optimal breakpoint at 2013
+strucsummary(nmdspoints.biwk, station=218, mds = "MDS2") # one optimal breakpoint at 2016
 strucsummary(nmdspoints.biwk, station=230, mds = "MDS2") # zero optimal breakpoints
 
 
