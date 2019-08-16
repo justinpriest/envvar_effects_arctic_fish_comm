@@ -426,10 +426,10 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
   #annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
   #annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") + 
   annotate("text", x=0.2, y=-0.25, label= "Stress = 0.156", family = "Times New Roman") + 
-  geom_label(aes(x=0.2, y=-0.14, label = "Biweekly"), fill = "black", color = "white") +
-  geom_label(aes(x=0.21, y=0.15, label = "Salinity"), fill = "black", color = "white") +
-  geom_label(aes(x=-0.05, y=0.01, label = "Year"), fill = "black", color = "white") +
-  geom_label(aes(x=0.02, y=-0.07, label = "Temp"), fill = "black", color = "white") +
+  geom_label(aes(x=0.2, y=-0.14, label = "Biweekly"), fill = "black", color = "white", family = "Times New Roman") +
+  geom_label(aes(x=0.21, y=0.15, label = "Salinity"), fill = "black", color = "white", family = "Times New Roman") +
+  geom_label(aes(x=-0.05, y=0.01, label = "Year"), fill = "black", color = "white", family = "Times New Roman") +
+  geom_label(aes(x=0.02, y=-0.07, label = "Temp"), fill = "black", color = "white", family = "Times New Roman") +
   annotate("text", x=0.05, y=-0.26, label= "230", family = "Times New Roman") +
   annotate("text", x=0.08, y=-0.19, label= "214", family = "Times New Roman") +
   annotate("text", x=-0.18, y=0.13, label= "218", family = "Times New Roman") +
