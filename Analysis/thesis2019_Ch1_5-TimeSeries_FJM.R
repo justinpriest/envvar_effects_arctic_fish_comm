@@ -94,14 +94,14 @@ ggplot(gampredict.df, aes(x=Year, y=pred.MDS1, color=Station)) +
   scale_color_manual(values =  brewer.pal(4, "Set2")) 
 summary(MDS1.gam)
 
-MDS2.gam <- gam(MDS2 ~ s(Year) + Station + as.numeric(biweekly) -1, data = nmdspoints.biwk)
+MDS2.gam <- gam(MDS2 ~ s(Year) + Station + as.numeric(biweekly), data = nmdspoints.biwk) #FJM removed -1
 gampredict.df$pred.MDS2 <- predict.gam(MDS2.gam, gampredict.df)
 ggplot(gampredict.df, aes(x=Year, y=pred.MDS2, color=Station)) +
   geom_point() + geom_smooth(se=FALSE, cex=2.5) + 
   scale_color_manual(values =  brewer.pal(4, "Set2")) 
 summary(MDS2.gam)
 
-MDS3.lm <- lm(MDS3 ~ Year + Station + as.numeric(biweekly) - 1, data = nmdspoints.biwk) # we can let this vary by stn
+MDS3.lm <- lm(MDS3 ~ Year*Station + as.numeric(biweekly) - 1, data = nmdspoints.biwk) # FJM changed to "Year*Station"
 gampredict.df$pred.MDS3 <- predict(MDS3.lm, gampredict.df)
 ggplot(gampredict.df, aes(x=Year, y=pred.MDS3, color=Station)) +
   geom_point() + geom_smooth(se=FALSE, cex=2.5) + 
@@ -132,7 +132,7 @@ strucsummary(nmdspoints.biwk, station=214, mds = "MDS1")
 strucsummary(nmdspoints.biwk, station=218, mds = "MDS1")
 strucsummary(nmdspoints.biwk, station=230, mds = "MDS1")
 #Summary: For MDS1, all stations have 0 optimal TS breakpoints, though most have 1 breakpoint close behind
-
+    
 strucsummary(nmdspoints.biwk, station=220, mds = "MDS2") # one optimal breakpoint at 2016
 strucsummary(nmdspoints.biwk, station=214, mds = "MDS2") # one optimal breakpoint at 2013
 strucsummary(nmdspoints.biwk, station=218, mds = "MDS2") # one optimal breakpoint at 2016
@@ -149,6 +149,8 @@ strucsummary(nmdspoints.biwk, station=230, mds = "MDS3") #
 
 # Focus on MDS3 if that's the axis that has the strongest time trend
 
+
+# This was residual and not present in the document that Franz had 
 temp5 <- nmdspoints.biwk %>% filter(Station == 220) %>% dplyr::select(MDS2) %>% as.ts(mds)
 temp6 <- Fstats(temp5 ~1)
 print(plot(temp6))
@@ -158,6 +160,7 @@ summary(breakpoints(temp6))
 
 
 ### NEW FROM FJM BELOW, Sept 3, 2019
+
 ### Fit all models (except structural change) within GAM 
 #   framework:
 
@@ -184,8 +187,4 @@ AIC(mds2.gam1, mds2.gam2, mds2.gam3)
 
 # The second model fits best, suggesting a single, highly
 # nonlinear trend over time.
-
-
-
-
 
