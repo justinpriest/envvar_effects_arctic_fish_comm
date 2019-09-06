@@ -121,6 +121,7 @@ catchenviron <- left_join(allcatch, watersalin %>% dplyr::select(-c(Month)),
 # and keep in same order as the corresponding catch dataframe. 
 # The only tricky thing done is that I converted wind from degrees (0-360) to East-West using trig,
 # before this I took the mean using circular averaging. Salin & temp are from midwater sampling
+# Wind data were summarized before merging using code at the end of this script
 pru.env.ann <- catchenviron %>% dplyr::distinct(Year, Station) %>% arrange(Year, Station) %>%
   #the above section creates a dataframe of year/station combos
   left_join(deadhorsewind %>% mutate(Year = year(Date)) %>% group_by(Year) %>% 
