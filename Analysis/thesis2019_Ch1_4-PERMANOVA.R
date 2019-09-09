@@ -200,10 +200,19 @@ bioenv(braydist ~ as.numeric(Year) + annwindspeed_kph + annwinddir + anndisch_cf
          annsal_ppt + anntemp_c, pru.env.ann, metric = "euclidean")
 # salinity and temp are the best predictors
 
-bioenv(braydist.biwk ~ as.numeric(Year) + as.numeric(biweekly) + biwkmeanspeed_kph + biwkmeandir + 
-         meandisch_cfs + Salin_Top + Temp_Top + winddir_ew, pru.env.biwk, metric = "euclidean")
+bioenv(braydist.biwk ~ as.numeric(Year) + as.numeric(biweekly) + biwkmeanspeed_kph + 
+         biwkmeandir + meandisch_cfs + Salin_Top + Temp_Top + winddir_ew, 
+       pru.env.biwk, metric = "euclidean") # old
 # biweekly, salinity, temp are best subset of env variables
 # If w/o biweekly, wind dir E-W is also important
+bioenv(braydist.biwk ~ as.numeric(Year) + as.numeric(biweekly) + meandisch_cfs + 
+         Salin_Top + Temp_Top + wind_vector, 
+       pru.env.biwk, metric = "euclidean") # updated to include windvector
+# does not change results
+
+mantel(braydist.biwk, vegdist(pru.env.biwk %>% ungroup() %>%
+         dplyr::select(biweekly, Salin_Top, Temp_Top), permutations = 999), method = "spearman")
+
 
 
 
@@ -217,8 +226,9 @@ env.vectors.biwk <- envfit(totalNMDS.biwk, pru.env.biwk %>%
                            #dplyr::select(-winddir_ew, -Salin_Mid, -Temp_Mid), 
                            dplyr::select(Year, biweekly, Station, Salin_Top, Temp_Top),   
                            na.rm = TRUE, permutations = 999)
-env.vectors.biwk # salin, wind, and year are signif
-
+env.vectors.biwk # salin, wind, and year are signif. temp marginal
+# as a test, I included wind_vector (even though it wasn't one of the top params
+#  from the Mantel test bioenv). It was signif p<0.001, R2 ~ 0.047
 
 
 
@@ -299,18 +309,29 @@ catchmatrix.biwk.stdtrans.sub <- catchmatrix.biwk.stdtrans[!rowSums(is.na(pru.en
 pru.env.biwk.sub <- pru.env.biwk[!rowSums(is.na(pru.env.biwk)) >0,]
 
 catchmatrix.biwk.cpue.stdtrans.sub <- catchmatrix.biwk.cpue.stdtrans[!rowSums(is.na(pru.env.biwk)) >0,]
-pru.env.biwk.sub <- pru.env.biwk[!rowSums(is.na(pru.env.biwk)) >0,]
 
 
-pru.env.biwk.std <- pru.env.biwk.sub
-for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
-  pru.env.biwk.std[i] <- ((pru.env.biwk.sub[i]+1)^0.5)/max(((pru.env.biwk.sub[i]+1)^0.5))}
+# Original code. Not using once added wind_vector because negative values cause trans issues
+# As per conversation with FJM (Sept 8), PERMANOVA does not require distributions
+# pru.env.biwk.std <- pru.env.biwk.sub
+# for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
+#   pru.env.biwk.std[i] <- ((pru.env.biwk.sub[i]+1)^0.5)/max(((pru.env.biwk.sub[i]+1)^0.5))}
 #using square root tranform
 # This standardizes each variable to itself
 
 
+# Standarize bariables to max obs
+pru.env.biwk.std <- pru.env.biwk.sub
+for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
+  pru.env.biwk.std[i] <- pru.env.biwk.sub[i]/max(((pru.env.biwk.sub[i])))}
+# This standardizes each variable to itself
+
+
+
+
 betad.biwk <- betadiver(catchmatrix.biwk.stdtrans.sub , "z") 
-adonis(betad.biwk ~ Temp_Top + Salin_Top + winddir_ew + meandisch_cfs + Year + Station + biweekly, pru.env.biwk.std, perm=999) 
+#adonis(betad.biwk ~ Temp_Top + Salin_Top + winddir_ew + meandisch_cfs + Year + Station + biweekly, pru.env.biwk.std, perm=999)
+adonis(betad.biwk ~ Temp_Top + Salin_Top + wind_vector + meandisch_cfs + Year + Station + biweekly, pru.env.biwk.std, perm=999)
 #winddir slightly better than speed. Temp signif if added first, but mostly captured by salin
 # nonenviron explan var (Year, Stn, biweekly) are highly significant, esp seasonality (biweekly)
 # But Franz recommends using the Bray-Curtis dissimilarity matrix
@@ -323,6 +344,9 @@ adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cf
         pru.env.biwk.std, perm=999, by = "margin")
 # same general trends, but the model fits better (resids dropped from 0.54 to 0.51), Stn R2 up
 # interaction btwn seasonal & station
+adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cfs + wind_vector + Year + Station + biweekly, 
+        pru.env.biwk.std, perm=999, by = "margin")
+
 
 permanova.biwk <- adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station + as.factor(biweekly) + #Station*biweekly + 
                           Temp_Top + Salin_Top, 
@@ -367,7 +391,7 @@ summary(simper(catchmatrix.biwk.stdtrans, pru.env.biwk.std$Station))
 
 # Final Analysis
 EWsimper <- data.frame((summary(simper(catchmatrix.biwk.stdtrans, (pru.env.biwk.std %>% 
-                        mutate(EW_stn = ifelse(Station==230 | Station == 214, "EastStn", "WestStn")))$EW_stn )))$ EastStn_WestStn )
+                        mutate(EW_stn = ifelse(Station==230 | Station == 214, "EastStn", "WestStn")))$EW_stn )))$EastStn_WestStn )
 EWsimper
 
 

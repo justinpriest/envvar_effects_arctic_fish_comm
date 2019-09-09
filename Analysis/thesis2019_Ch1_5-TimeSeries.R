@@ -179,13 +179,62 @@ mds2.gam3 <- gam(MDS2 ~ Station + biweekly, data = nmdspoints.biwk)
 summary(mds2.gam3)
 visreg(mds2.gam3)
 
-# Compare the three models:
-AIC(mds2.gam1, mds2.gam2, mds2.gam3)
+
+# Compare the three models + null:
+AIC(mds2.gam1, mds2.gam2, mds2.gam3, gam(MDS2 ~ 1, data = nmdspoints.biwk))
 
 # The second model fits best, suggesting a single, highly
 # nonlinear trend over time.
 
 
 
+### JTP CODE
+# Now re-do the same as Franz above but for MDS1 & MDS3
+
+#MDS1
+# Full model, smooth temporal trend by station:
+mds1.gam1 <- gam(MDS1 ~ s(Year, by = Station) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds1.gam1)
+visreg(mds1.gam1, "Year", by="Station")
+visreg(mds1.gam1, "Station")
+visreg(mds1.gam1, "biweekly")
+# Trends differ but all decreasing
+
+# Additive effects (same temporal trend across stations)
+mds1.gam2 <- gam(MDS1 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds1.gam2)
+visreg(mds1.gam2)
+
+# No time trend:
+mds1.gam3 <- gam(MDS1 ~ Station + biweekly, data = nmdspoints.biwk)
+summary(mds1.gam3)
+visreg(mds1.gam3)
+
+# Compare the three models + null:
+AIC(mds1.gam1, mds1.gam2, mds1.gam3, gam(MDS1 ~ 1, data = nmdspoints.biwk))
+# second model also fits best
+
+#MDS3
+# Full model, smooth temporal trend by station:
+mds3.gam1 <- gam(MDS3 ~ s(Year, by = Station) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds3.gam1)
+visreg(mds3.gam1, "Year", by="Station")
+visreg(mds3.gam1, "Station")
+visreg(mds3.gam1, "biweekly")
+# Trends differ but all decreasing
+
+# Additive effects (same temporal trend across stations)
+mds3.gam2 <- gam(MDS3 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds3.gam2)
+visreg(mds3.gam2)
+
+# No time trend:
+mds3.gam3 <- gam(MDS3 ~ Station + biweekly, data = nmdspoints.biwk)
+summary(mds3.gam3)
+visreg(mds3.gam3)
+
+# Compare the three models + null:
+AIC(mds3.gam1, mds3.gam2, mds3.gam3, gam(MDS3 ~ 1, data = nmdspoints.biwk))
+# all 3 models about the same. No time trend slightly best
 
 

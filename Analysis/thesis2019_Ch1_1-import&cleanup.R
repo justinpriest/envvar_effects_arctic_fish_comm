@@ -112,7 +112,8 @@ catchenviron <- left_join(allcatch, watersalin %>% dplyr::select(-c(Month)),
             by = c("Year" = "Year", "EndDate" = "Date", "Station" = "Station")) %>% 
   left_join(deadhorsewind %>% dplyr::select(-month), by = c("Year" = "Year", "EndDate" = "Date")) %>%
   left_join(sagdisch, by = c("EndDate" = "Date")) %>%
-  addbiwknum() %>% filter(Station != 231)
+  addbiwknum() %>% filter(Station != 231) %>%
+  mutate(wind_vector = winddir_ew * biwkmeanspeed_kph) # Added Sept 2019, FJM advice
 
 ###################################
 # Join All Environmental Data
@@ -161,12 +162,13 @@ pru.env.biwk <- pru.env.day %>%
   group_by(Year, biweekly, Station) %>%
   summarise(biwkmeanspeed_kph = mean(dailymeanspeed_kph, na.rm = TRUE),
             biwkmeandir = ((circ.mean(2*pi*na.omit(dailymeandir)/360))*(360 / (2*pi))) %%360,
-            meandisch_cfs = mean(meandisch_cfs , na.rm=TRUE),
+            meandisch_cfs = mean(meandisch_cfs, na.rm=TRUE),
             Salin_Top = mean(Salin_Top, na.rm=TRUE),
             Salin_Mid = mean(Salin_Mid, na.rm=TRUE),
             Temp_Top = mean( Temp_Top, na.rm=TRUE),
             Temp_Mid = mean(Temp_Mid, na.rm=TRUE),
-            winddir_ew = mean(winddir_ew, na.rm=TRUE))
+            winddir_ew = mean(winddir_ew, na.rm=TRUE),
+            wind_vector = winddir_ew * biwkmeanspeed_kph) # Added Sept 2019, FJM advice
 
 
 

@@ -199,7 +199,7 @@ spprichplot.biwk <- ggplot(predspeciesrich %>% group_by(biweekly) %>%
   geom_ribbon(aes(ymin=pred.gam-(2*pred.gam.se), ymax=pred.gam+(2*pred.gam.se)), alpha = 0.3) +
   geom_line(cex=2) +
   xlab("Biweekly Period") + ylab("Predicted Species Richness") +
-  scale_y_continuous(limits = c(13, 18.5), breaks = 13:18, oob=scales::rescale_none) +
+  scale_y_continuous(limits = c(13, 19), breaks = 13:18, oob=scales::rescale_none) +
   theme_bw() +
   theme(text=element_text(family="Times New Roman", size=12),
         #panel.grid.major=element_blank(),
@@ -215,7 +215,7 @@ spprichplot.year <- ggplot(predspeciesrich %>% group_by(Year) %>%
   geom_line(cex=2) + 
   xlab("Year") + ylab("")+ 
   scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
-  scale_y_continuous(limits = c(13, 18.5), breaks = 13:18) +
+  scale_y_continuous(limits = c(13, 19), breaks = 13:18, oob=scales::rescale_none) +
   theme_bw() +
   theme(text=element_text(family="Times New Roman", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1), 
@@ -225,9 +225,10 @@ spprichplot.year <- ggplot(predspeciesrich %>% group_by(Year) %>%
 
 
 spprichplots <- cowplot::plot_grid(spprichplot.biwk, spprichplot.year, labels = c("A", "B"), 
+                                   label_fontfamily = "Times New Roman",
                                    label_x = 0.15, label_y = 0.96, ncol =2, align = 'h')
 spprichplots
-#ggsave(here::here("plotexports/Fig_spprichness2plot.png"), plot = spprichplots,  width = 6, height = 4, units = "in")
+#ggsave(here::here("plotexports/Fig_spprichness2plot_V2.png"), plot = spprichplots,  width = 6, height = 4, units = "in")
 
 
 
