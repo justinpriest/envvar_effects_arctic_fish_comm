@@ -351,7 +351,7 @@ adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cf
 permanova.biwk <- adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station + as.factor(biweekly) + #Station*biweekly + 
                           Temp_Top + Salin_Top, 
                           pru.env.biwk.std, perm=999, by = "margin")
-permanova.biwk
+permanova.biwk # Top PERMANOVA model. Explains 1-0.5254= 47.5% of variation
 # everything is very significant. 
 # BIWEEKLY AS A FACTOR?
 

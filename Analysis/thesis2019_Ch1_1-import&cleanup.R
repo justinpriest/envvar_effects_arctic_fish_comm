@@ -112,8 +112,7 @@ catchenviron <- left_join(allcatch, watersalin %>% dplyr::select(-c(Month)),
             by = c("Year" = "Year", "EndDate" = "Date", "Station" = "Station")) %>% 
   left_join(deadhorsewind %>% dplyr::select(-month), by = c("Year" = "Year", "EndDate" = "Date")) %>%
   left_join(sagdisch, by = c("EndDate" = "Date")) %>%
-  addbiwknum() %>% filter(Station != 231) %>%
-  mutate(wind_vector = winddir_ew * biwkmeanspeed_kph) # Added Sept 2019, FJM advice
+  addbiwknum() %>% filter(Station != 231) 
 
 ###################################
 # Join All Environmental Data
