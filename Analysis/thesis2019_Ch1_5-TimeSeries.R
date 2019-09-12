@@ -164,7 +164,7 @@ summary(breakpoints(temp6))
 # Full model, smooth temporal trend by station:
 mds2.gam1 <- gam(MDS2 ~ s(Year, by = Station) + Station + biweekly, data = nmdspoints.biwk)
 summary(mds2.gam1)
-visreg(mds2.gam1, "Year", by="Station")
+visreg(mds2.gam1, "Year", by="Station", gg=TRUE)
 visreg(mds2.gam1, "Station")
 visreg(mds2.gam1, "biweekly")
 # Trends differ but all decreasing

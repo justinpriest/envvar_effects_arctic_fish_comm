@@ -12,6 +12,7 @@ library(mgcv)
 library(gratia) # devtools::install_github('gavinsimpson/gratia')
 library(directlabels)
 library(cowplot)
+library(visreg)
 
 source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
 
@@ -393,7 +394,7 @@ visreg(biwk.gam3)
 
 AIC(biwk.gam1, biwk.gam2, biwk.gam3)
 # The second model also the AIC-preferred model
-
+biwk.gam2 # TOP SPECIES RICHNESS MODEL
 
 
 
