@@ -164,7 +164,7 @@ summary(breakpoints(temp6))
 # Full model, smooth temporal trend by station:
 mds2.gam1 <- gam(MDS2 ~ s(Year, by = Station) + Station + biweekly, data = nmdspoints.biwk)
 summary(mds2.gam1)
-visreg(mds2.gam1, "Year", by="Station", gg=TRUE)
+visreg(mds2.gam1, "Year", by="Station", gg = TRUE)
 visreg(mds2.gam1, "Station")
 visreg(mds2.gam1, "biweekly")
 # Trends differ but all decreasing
@@ -237,4 +237,8 @@ visreg(mds3.gam3)
 AIC(mds3.gam1, mds3.gam2, mds3.gam3, gam(MDS3 ~ 1, data = nmdspoints.biwk))
 # all 3 models about the same. No time trend slightly best
 
+par(mfrow(c(1,1,)))
 
+
+visreg(mds1.gam2, "Year")
+visreg(mds2.gam2, "Year")

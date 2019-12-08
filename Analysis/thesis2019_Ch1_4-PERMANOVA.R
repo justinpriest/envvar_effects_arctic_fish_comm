@@ -403,7 +403,7 @@ finalcolors <- c("#b9a3c6", "#0063a0", "#8cc687", "#d86a6a")
 
 ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
   geom_point(aes(color=Station), cex=5) + 
-  stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2, show.legend = FALSE) +
+  #stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2, show.legend = FALSE) +
   theme_bw() + theme(panel.grid.minor = element_blank(), 
                      text=element_text(family="Times New Roman", size=12)) +
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
@@ -413,18 +413,20 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
              mutate(species = rownames(.)) %>%
              filter(species %in% topcorrspp), 
              aes(x=MDS1, y=MDS2, label = species), family = "Times New Roman") +
-  scale_color_manual(values =  finalcolors) +
-  annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
-  annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
-  annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
-  annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") + 
-  geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
-            aes(x=NMDS1, y=NMDS2, label="X", color=Station), fill="#e8e8e8", cex=5, show.legend = FALSE)
+  #scale_color_manual(values =  finalcolors) +
+  scale_color_manual(values =  brewer.pal(4, "Set2")) 
+  # annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
+  # annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
+  # annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
+  # annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") 
+  # geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
+  #           aes(x=NMDS1, y=NMDS2, label="X", color=Station), fill="#e8e8e8", cex=5, show.legend = FALSE)
 
 #ggsave("plotexports/Fig_biwknMDS.png", dpi = 300, width = 7.5, height = 5)
 
 
-finalcolors_BW <- c("#d6d6d6", "#575757", "#9b9b9b", "#7a7a7a") #ellipse colors
+
+#finalcolors_BW <- c("#d6d6d6", "#575757", "#9b9b9b", "#7a7a7a") #ellipse colors
 finalcolors_BW <- c("#494949", "#9b9b9b", "#494949", "#9b9b9b") #ellipse colors
 
 # Same but B&W Version

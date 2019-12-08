@@ -435,7 +435,7 @@ ggplot(modelpredict.gam(topmod.spprich, "Year", "biweekly"), aes(x=Year, y=biwee
   theme_bw() +
   theme(text=element_text(family="Times New Roman", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1)) 
-#ggsave("plotexports/Fig_spprich.png", dpi = 300, width = 6.5, height = 4.33)
+#ggsave("plotexports/Fig_spprich_color.png", dpi = 300, width = 6.5, height = 4.33)
 
 
 
