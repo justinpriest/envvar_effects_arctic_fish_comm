@@ -135,52 +135,6 @@ ggplot(data=rarespp.biwk.pres %>% filter(Species %in% c("BRBT", "BRCS", "CHUM", 
 
 
 
-predictedvals <- expand.grid(Year = 2001:2018, biweekly = 1:4, 
-                             #Species = c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC"),
-                             Station = c("230", "214", "218", "220"))
-predictedvals$predval_BRBT <- predict.glm(fit_rare_BRBT, predictedvals, type = "response")
-predictedvals$predse_BRBT <- predict.glm(fit_rare_BRBT, predictedvals, type = "response", se=T)$se.fit
-predictedvals$predval_BRCS <- predict.glm(fit_rare_BRCS, predictedvals, type = "response")
-predictedvals$predse_BRCS <- predict.glm(fit_rare_BRCS, predictedvals, type = "response", se=T)$se.fit
-predictedvals$predval_SLSC <- predict.glm(fit_rare_SLSC, predictedvals, type = "response")
-predictedvals$predse_SLSC <- predict.glm(fit_rare_SLSC, predictedvals, type = "response", se=T)$se.fit
-
-predictedvals.year <- predictedvals %>% group_by(Year) %>% 
-  summarise(predval_BRBT=mean(predval_BRBT),
-            predval_BRCS=mean(predval_BRCS),
-            predval_SLSC=mean(predval_SLSC),
-            predse_BRBT=mean(predse_BRBT), 
-            predse_BRCS=mean(predse_BRCS),
-            predse_SLSC=mean(predse_SLSC))
-
-
-
-p <- ggplot(data = predictedvals.year) +
-  geom_ribbon(aes(x=Year, ymin=predval_BRCS-predse_BRCS, ymax=predval_BRCS+predse_BRCS), fill="gray", alpha=0.45) +
-  geom_ribbon(aes(x=Year, ymin=predval_SLSC-predse_SLSC, ymax=predval_SLSC+predse_SLSC), fill="gray", alpha=0.45) +
-  geom_ribbon(aes(x=Year, ymin=predval_BRBT-predse_BRBT, ymax=predval_BRBT+predse_BRBT), fill="gray", alpha=0.45) +
-  geom_line(aes(x=Year, y = predval_BRCS), cex=2, color = "black") + # was #a3a3a3
-  geom_line(aes(x=Year, y = predval_SLSC), cex=2, color = "black") + # was #474747
-  geom_line(aes(x=Year, y = predval_BRBT), cex=2, color = "black") +
-  scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
-  scale_y_continuous(limits = c(0,0.2), oob=scales::rescale_none) +
-  ylab("Predicted Biweekly Presence ") + xlab("") +
-  theme_bw() +
-  theme(text=element_text(family="Times New Roman", size=12), 
-        axis.text.x = element_text(angle = 35, hjust = 1)) +
-  annotate("text", x=2015.5, y=0.015, label= "Slimy\nSculpin", family = "Times New Roman") +
-  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco", family = "Times New Roman") +
-  annotate("text", x=2005.5, y=0.02, label= "Burbot", family = "Times New Roman")
-p
-ggsave("plotexports/Fig_rarespecies.png", width = 6, height = 4, units = "in")
-# need to gather and put in long format if we want to direct label
-
-#predictedvals.year %>% gather(Species, val, -Year)
-
-
-
-
-
 ##########################
 
 #Other exploratory plots
