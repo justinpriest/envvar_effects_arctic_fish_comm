@@ -1,7 +1,7 @@
 ---
 title: "Thesis Tables and Figures"
 author: "Justin Priest"
-date: "May 1, 2019"
+date: "May 30, 2021"
 output: word_document
 ---
 This document produces figures, tables, and misc summary results for the report then outputs it to MS Word. 
@@ -25,10 +25,11 @@ loadfonts(device="win") #change for mac users
 
 
 # Later can make an RDA file to save output from all of these
-source(here::here("Analysis/thesis2019_Ch1_2-speciesrichness.R"))
-source(here::here("Analysis/thesis2019_Ch1_3-rarespecies.R"))
-source(here::here("Analysis/thesis2019_Ch1_4-PERMANOVA.R"))
-source(here::here("Analysis/thesis2019_Ch1_5-TimeSeries.R"))
+source(here::here("code/arcticfishcomm-2_speciesrichness.R"))
+source(here::here("code/arcticfishcomm-3_rarespecies.R"))
+source(here::here("code/arcticfishcomm-4_PERMANOVA.R"))
+source(here::here("code/arcticfishcomm-5_timeseries.R"))
+
 
 
 # default report theme for ggplot, use by adding "+ report_theme()" to ggplot call

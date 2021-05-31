@@ -1,13 +1,9 @@
-# Logistic binomial regression 
-
+# Logistic binomial regression of rare species
 
 library(here)
-library(ggplot2)
 library(visreg)
 library(scales)
-source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
-
-
+source(here::here("code/arcticfishcomm-1_import&cleanup.R"))
 
 
 # Data Import and Cleanup

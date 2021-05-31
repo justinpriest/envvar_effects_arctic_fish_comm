@@ -10,7 +10,8 @@ library(strucchange)
 library(ggsidekick) #devtools::install_github("seananderson/ggsidekick")
 library(here)
 
-source(here::here("Analysis/thesis2019_Ch1_4-PERMANOVA.R"))
+source(here::here("code/arcticfishcomm-1_import&cleanup.R"))
+source(here::here("code/arcticfishcomm-4_PERMANOVA.R"))
 
 
 summary(lm(MDS1 ~ Year, data = nmdspoints.biwk)) # marginal
@@ -94,14 +95,14 @@ ggplot(gampredict.df, aes(x=Year, y=pred.MDS1, color=Station)) +
   scale_color_manual(values =  brewer.pal(4, "Set2")) 
 summary(MDS1.gam)
 
-MDS2.gam <- gam(MDS2 ~ s(Year) + Station + as.numeric(biweekly), data = nmdspoints.biwk) #FJM removed -1
+MDS2.gam <- gam(MDS2 ~ s(Year) + Station + as.numeric(biweekly) -1, data = nmdspoints.biwk)
 gampredict.df$pred.MDS2 <- predict.gam(MDS2.gam, gampredict.df)
 ggplot(gampredict.df, aes(x=Year, y=pred.MDS2, color=Station)) +
   geom_point() + geom_smooth(se=FALSE, cex=2.5) + 
   scale_color_manual(values =  brewer.pal(4, "Set2")) 
 summary(MDS2.gam)
 
-MDS3.lm <- lm(MDS3 ~ Year*Station + as.numeric(biweekly) - 1, data = nmdspoints.biwk) # FJM changed to "Year*Station"
+MDS3.lm <- lm(MDS3 ~ Year + Station + as.numeric(biweekly) - 1, data = nmdspoints.biwk) # we can let this vary by stn
 gampredict.df$pred.MDS3 <- predict(MDS3.lm, gampredict.df)
 ggplot(gampredict.df, aes(x=Year, y=pred.MDS3, color=Station)) +
   geom_point() + geom_smooth(se=FALSE, cex=2.5) + 
@@ -132,7 +133,7 @@ strucsummary(nmdspoints.biwk, station=214, mds = "MDS1")
 strucsummary(nmdspoints.biwk, station=218, mds = "MDS1")
 strucsummary(nmdspoints.biwk, station=230, mds = "MDS1")
 #Summary: For MDS1, all stations have 0 optimal TS breakpoints, though most have 1 breakpoint close behind
-    
+
 strucsummary(nmdspoints.biwk, station=220, mds = "MDS2") # one optimal breakpoint at 2016
 strucsummary(nmdspoints.biwk, station=214, mds = "MDS2") # one optimal breakpoint at 2013
 strucsummary(nmdspoints.biwk, station=218, mds = "MDS2") # one optimal breakpoint at 2016
@@ -149,8 +150,6 @@ strucsummary(nmdspoints.biwk, station=230, mds = "MDS3") #
 
 # Focus on MDS3 if that's the axis that has the strongest time trend
 
-
-# This was residual and not present in the document that Franz had 
 temp5 <- nmdspoints.biwk %>% filter(Station == 220) %>% dplyr::select(MDS2) %>% as.ts(mds)
 temp6 <- Fstats(temp5 ~1)
 print(plot(temp6))
@@ -159,15 +158,38 @@ summary(breakpoints(temp6))
 
 
 
-### NEW FROM FJM BELOW, Sept 3, 2019
+# Fit all models (except structural change) within GAM framework:
+# Now re-doing the same as above but for MDS1 & MDS3
 
-### Fit all models (except structural change) within GAM 
-#   framework:
+### MDS1 ###
+# Full model, smooth temporal trend by station:
+mds1.gam1 <- gam(MDS1 ~ s(Year, by = Station) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds1.gam1)
+visreg(mds1.gam1, "Year", by="Station")
+visreg(mds1.gam1, "Station")
+visreg(mds1.gam1, "biweekly")
+# Trends differ but all decreasing
 
+# Additive effects (same temporal trend across stations)
+mds1.gam2 <- gam(MDS1 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds1.gam2)
+visreg(mds1.gam2)
+
+# No time trend:
+mds1.gam3 <- gam(MDS1 ~ Station + biweekly, data = nmdspoints.biwk)
+summary(mds1.gam3)
+visreg(mds1.gam3)
+
+# Compare the three models + null:
+AIC(mds1.gam1, mds1.gam2, mds1.gam3, gam(MDS1 ~ 1, data = nmdspoints.biwk))
+# second model also fits best
+
+
+### MDS2 ###
 # Full model, smooth temporal trend by station:
 mds2.gam1 <- gam(MDS2 ~ s(Year, by = Station) + Station + biweekly, data = nmdspoints.biwk)
 summary(mds2.gam1)
-visreg(mds2.gam1, "Year", by="Station")
+visreg(mds2.gam1, "Year", by="Station", gg = TRUE)
 visreg(mds2.gam1, "Station")
 visreg(mds2.gam1, "biweekly")
 # Trends differ but all decreasing
@@ -182,9 +204,37 @@ mds2.gam3 <- gam(MDS2 ~ Station + biweekly, data = nmdspoints.biwk)
 summary(mds2.gam3)
 visreg(mds2.gam3)
 
-# Compare the three models:
-AIC(mds2.gam1, mds2.gam2, mds2.gam3)
+# Compare the three models + null:
+AIC(mds2.gam1, mds2.gam2, mds2.gam3, gam(MDS2 ~ 1, data = nmdspoints.biwk))
+# The second model fits best, suggesting a single, highly nonlinear trend over time.
 
-# The second model fits best, suggesting a single, highly
-# nonlinear trend over time.
 
+
+### MDS3 ###
+# Full model, smooth temporal trend by station:
+mds3.gam1 <- gam(MDS3 ~ s(Year, by = Station) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds3.gam1)
+visreg(mds3.gam1, "Year", by="Station")
+visreg(mds3.gam1, "Station")
+visreg(mds3.gam1, "biweekly")
+# Trends differ but all decreasing
+
+# Additive effects (same temporal trend across stations)
+mds3.gam2 <- gam(MDS3 ~ s(Year) + Station + biweekly, data = nmdspoints.biwk)
+summary(mds3.gam2)
+visreg(mds3.gam2)
+
+# No time trend:
+mds3.gam3 <- gam(MDS3 ~ Station + biweekly, data = nmdspoints.biwk)
+summary(mds3.gam3)
+visreg(mds3.gam3)
+
+# Compare the three models + null:
+AIC(mds3.gam1, mds3.gam2, mds3.gam3, gam(MDS3 ~ 1, data = nmdspoints.biwk))
+# all 3 models about the same. No time trend slightly best
+
+par(mfrow(c(1,1,)))
+
+
+visreg(mds1.gam2, "Year")
+visreg(mds2.gam2, "Year")

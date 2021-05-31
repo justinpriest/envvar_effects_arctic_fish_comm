@@ -2,12 +2,14 @@
 
 # Script to run PERMANOVA models and analysis
 
-# This was done at on an annual and a biweekly scale
-# There are two sections, first Section 1 looks at 
+# Originally, this was done on both an annual and a biweekly scale
+# Code here has been restricted to biweekly only results
+# As such, hundreds of lines of code that looked at annual (even daily) results were cut.
 
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+# There are two sections: 
+# Section 1 tests if species composition has changed
+# Section 2 quantifies whether (and how) changes are related to environmental variability
+
 library(vegan)
 library(RColorBrewer)
 library(broom)
@@ -15,21 +17,14 @@ library(colorspace)
 library(scales)
 library(here)
 
-source(here::here("Analysis/thesis2019_Ch1_1-import&cleanup.R"))
+source(here::here("code/arcticfishcomm-1_import&cleanup.R"))
 
+#this pulls in the following relevant dataframes:
+head(pru.env.biwk) # biweekly summary of environmental data
+head(catchmatrix.biwk.stdtrans) 
+#each row is a biwk/station, cols are species
+# This is then standardized to 0-1 (percent of max catch)
 
-#this pulls in the following (relevant) dataframes:
-head(catchenviron) # all catch data, left joined with environ data
-head(pru.env.day)  # environmental data by day
-head(pru.env.ann)  # annual summary of environmental data
-head(pru.env.biwk)
-
-
-head(catchmatrix)     # each row is a year/station, cols are species
-head(catchmatrix.std) # standardize the above 0-1 (percent of max catch)
-head(catchmatrix.day) # each row is a day/station, cols are species
-head(catchmatrix.day.std)
-head(catchmatrix.biwk.stdtrans)
 
 set.seed(7787) # Need to reproduce nMDS plots. Randomly chose this number
 #################
@@ -40,98 +35,9 @@ set.seed(7787) # Need to reproduce nMDS plots. Randomly chose this number
 ## ORDINATION & DISSIMILARITY ##
 
 
+# biweekly data is standardized and 4th root transformed
 
 ### BRAY-CURTIS DISTANCE
-braydist <- vegdist(catchmatrix.std, method="bray") # This is a dissimilarity matrix
-
-# library(gplots)
-# heatmap.2(as.matrix(braydist))
-
-totalNMDS <- metaMDS(braydist, k=3, wascores = TRUE) # had to choose k=3 to get below 0.20
-
-#Plot, put years by color, add environ vectors
-plot(totalNMDS, display = "sites", type = "n", main = "Annual Results - colored by year grp")
-text(totalNMDS, select=which(pru.env.ann$Year<2010), col="red")
-text(totalNMDS, select=which(pru.env.ann$Year>2009), col="blue")
-#unclear if any patterns
-
-plot(totalNMDS, display = "sites", type = "n", main = "Annual Results - colored by station")
-text(totalNMDS, select=which(pru.env.ann$Station==214), col="red")
-text(totalNMDS, select=which(pru.env.ann$Station==218), col="blue")
-text(totalNMDS, select=which(pru.env.ann$Station==220), col="black")
-text(totalNMDS, select=which(pru.env.ann$Station==230), col="green")
-#pretty distinct groupings by site
-
-# From Franz: See how species are associated with sites
-totalNMDS_raw <- metaMDS(catchmatrix.std, k=3)
-plot(totalNMDS_raw$points, asp=1, pch=16, col=factor(pru.env.ann$Station))
-text(totalNMDS_raw, display = "species", col=2)
-# GRAY/RDWF assoc. w/ 230, DLVN w/ 214, PINK/PCHG/SFCD w/ 218 and CAPE/HBWF/LSCS w/ 220
-
-
-nmdspoints <- as.data.frame(totalNMDS$points[1:71,]) # 71 is the num. year/stn combos (4 stns, 18 yrs (no 231 in 2001))
-#row.names(nmdspoints) <- 2001:2017
-nmdspoints$YearStn <- rownames(totalNMDS$points)
-nmdspoints$Year <- as.numeric(substr(nmdspoints$YearStn, 1, 4))
-nmdspoints$Station <- factor(substr(nmdspoints$YearStn, 5, 7))
-nmdspoints$earlymidlate <- ifelse(nmdspoints$Year < 2007, "early", 
-                                  ifelse(nmdspoints$Year >= 2013, "late", "mid"))
-#this arbitrarily divides study in thirds, not the correct approach but good as EDA
-
-ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point() + #aes(color=Station), cex=5
-  geom_text(aes(label=YearStn, color=Station),hjust=.35, vjust=-.7, size=3)+
-  theme_bw() + theme(panel.grid.minor = element_blank()) 
-
-ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point() +
-  geom_text(aes(label=YearStn, color=Year),hjust=.35, vjust=-.7, size=3)+
-  theme_bw() + theme(panel.grid.minor = element_blank()) 
-# I used earlymidlate as a color too, but pattern was too slight
-
-ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point(aes(color=Station), cex=5) + 
-  scale_color_manual(values =  brewer.pal(4, "Set2")) +
-  theme_bw() + theme(panel.grid.minor = element_blank()) 
-
-
-
-mypal  <- colorRampPalette(brewer.pal(6, "Greens"))
-mypal2 <- colorRampPalette(brewer.pal(6, "Greys"))
-mypal3 <- colorRampPalette(brewer.pal(6, "Blues"))
-mypal4 <- colorRampPalette(brewer.pal(6, "Reds"))
-
-ggplot(nmdspoints, aes(x=MDS1, y=MDS2)) + geom_point() + 
-  geom_text(aes(label=YearStn, color=interaction(Year, Station))) + 
-  #scale_color_continuous(low = "#3fdeff", high = "#144f5b") +
-  scale_colour_manual(values = c(mypal(18), mypal2(18), mypal3(18), mypal4(18))) +
-  theme(legend.position = "none")
-
-
-
-##########################
-## nMDS axis regression ##
-## Will look into this more in next secion, TimeSeries
-
-plot(MDS1 ~ Year, data = nmdspoints)
-summary(lm(MDS1 ~ Year , data = nmdspoints)) # overall not significant
-summary(lm(MDS2 ~ Year , data = nmdspoints)) # marginally significant
-
-#now let's break it down by Station
-#library(broom)
-nmdspoints %>% group_by(Station) %>% do(model = lm(MDS1 ~ Year, data = .)) %>% 
-  tidy(model) # significant trend at Station 230 & 214, marginal at 220 
-nmdspoints %>% group_by(Station) %>% do(model = lm(MDS2 ~ Year, data = .)) %>% 
-  tidy(model) # none significant
-
-# visualize this for MDS1
-ggplot(nmdspoints, aes(x=Year, y =MDS1, color = Station)) + 
-  geom_point() + geom_smooth(method = "lm", se=FALSE)
-
-# From Franz: "Axis 3 shows a very strong time trend and the trend is very consistent among the 4 sites"
-ggplot(nmdspoints, aes(x=Year, y = MDS3, color = Station)) + 
-  geom_point() + geom_smooth(se=FALSE)
-
-
-######### BIWEEKLY
-######### lets try with biweekly which is standardized and 4th root transformed
 braydist.biwk <- vegdist(catchmatrix.biwk.stdtrans, method="bray")
 totalNMDS.biwk <- metaMDS(braydist.biwk, k=3)  #not convergent with k=2
 
@@ -196,10 +102,6 @@ ggplot(Spp.cor) +
 
 ## Bioenv ##
 # Bioenv is a mantel type test: which combination of environmental var explain it best
-bioenv(braydist ~ as.numeric(Year) + annwindspeed_kph + annwinddir + anndisch_cfs + 
-         annsal_ppt + anntemp_c, pru.env.ann, metric = "euclidean")
-# salinity and temp are the best predictors
-
 bioenv(braydist.biwk ~ as.numeric(Year) + as.numeric(biweekly) + biwkmeanspeed_kph + 
          biwkmeandir + meandisch_cfs + Salin_Top + Temp_Top + winddir_ew, 
        pru.env.biwk, metric = "euclidean") # old
@@ -217,11 +119,6 @@ mantel(braydist.biwk, vegdist(pru.env.biwk %>% ungroup() %>%
 
 
 ## EnvFit ##
-
-env.vectors.ann <- envfit(totalNMDS, pru.env.ann, permutations = 999)
-env.vectors.ann # Year and Station centroids are significant
-# also signif are temp, salin, and marginally wind direction
-
 env.vectors.biwk <- envfit(totalNMDS.biwk, pru.env.biwk %>% 
                            #dplyr::select(-winddir_ew, -Salin_Mid, -Temp_Mid), 
                            dplyr::select(Year, biweekly, Station, Salin_Top, Temp_Top),   
@@ -233,76 +130,11 @@ env.vectors.biwk # salin, wind, and year are signif. temp marginal
 
 
 
-plot(totalNMDS) 
-plot(env.vectors.ann, p.max = 0.02) # >pvals make plot too busy 
-#way too busy to repeat for biweekly scale
-
-ggplot(nmdspoints, aes(x=MDS1, y =MDS2)) + geom_point() +
-  scale_x_continuous(limits = c(-1, 1)) + scale_y_continuous(limits = c(-1, 1)) +
-  geom_segment(data = data.frame(env.vectors.ann$vectors$arrows), aes(x=0, xend=NMDS1, y=0, yend=NMDS2))
-#these segments don't match the arrows from before because of automatic scaling. I think. not sure
-
-
-ggplot(nmdspoints, aes(x=MDS1, y =MDS2)) + geom_point(aes(color = Station)) +
-  scale_x_continuous(limits = c(-0.43, 0.4)) + scale_y_continuous(limits = c(-0.4, 0.4)) +
-  geom_segment(data = data.frame(env.vectors.ann$vectors$arrows) %>% 
-                 cbind(r2=env.vectors.ann$vectors$r, pval =env.vectors.ann$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * r2, y=0, yend=NMDS2*r2))
-
-
-
-
-
 ###############
-## ANNUAL PERMANOVA ##
-
-# following example from vegan tutorial, page 33
+## BIWEEKLY PERMANOVA ##
+# Following example from vegan tutorial, page 33
 # http://cc.oulu.fi/~jarioksa/opetus/metodi/vegantutor.pdf
 
-# If including Annual in final analysis,
-# Update to sq rt transform the env var for annual
-# pru.env.biwk.std <- pru.env.biwk.sub
-# for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
-#   pru.env.biwk.std[i] <- ((pru.env.biwk.sub[i]+1)^0.5)/max(((pru.env.biwk.sub[i]+1)^0.5))}
-#using square root tranform
-
-
-
-
-betad <- betadiver(catchmatrix.std, "z")   # using Arrhenius z measure of beta diversity
-boxplot(betadisper(betad, pru.env.ann$Year), main = "Annual")
-
-adonis(betad ~ Year, pru.env.ann, perm=999) 
-adonis(betad ~ Station, pru.env.ann, perm=999) 
-adonis(betad ~ anntemp_c, pru.env.ann, perm=999) 
-adonis(betad ~ annsal_ppt, pru.env.ann, perm=999) 
-adonis(betad ~ anndisch_cfs, pru.env.ann, perm=999)     # not significant
-adonis(betad ~ annwinddir_ew, pru.env.ann, perm=999)    # not significant
-adonis(betad ~ annwindspeed_kph, pru.env.ann, perm=999) # not significant
-
-adonis(betad ~ annsal_ppt + anntemp_c + Station + Year, pru.env.ann, perm=999) 
-#note that terms are sequential so order matters!
-adonis(betad ~ Station + annsal_ppt + anntemp_c, pru.env.ann, perm=999) 
-
-boxplot(betadisper(betad, pru.env.ann$Station), main = "Annual")
-#note that the western and eastern sites look similar
-
-
-adonis(catchmatrix.std ~ annsal_ppt + annwinddir_ew + annwindspeed_kph + 
-          anndisch_cfs + anntemp_c, data=pru.env.ann, perm=999)
-
-adonis(braydist ~ Year + Station, data = pru.env.ann, perm = 9999)
-
-permanova.ann <- adonis2(catchmatrix.std ~ annsal_ppt + annwinddir_ew + annwindspeed_kph + 
-         anndisch_cfs + anntemp_c, data=pru.env.ann, perm=999, by = "margin")
-
-permanova.ann
-
-
-
-
-######
-## BIWEEKLY PERMANOVA ##
 
 # because there are rows with NAs in the env data, we need to remove these
 catchmatrix.biwk.stdtrans.sub <- catchmatrix.biwk.stdtrans[!rowSums(is.na(pru.env.biwk)) >0,]
@@ -320,7 +152,7 @@ catchmatrix.biwk.cpue.stdtrans.sub <- catchmatrix.biwk.cpue.stdtrans[!rowSums(is
 # This standardizes each variable to itself
 
 
-# Standarize bariables to max obs
+# Standardize variables to max obs
 pru.env.biwk.std <- pru.env.biwk.sub
 for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and station cols
   pru.env.biwk.std[i] <- pru.env.biwk.sub[i]/max(((pru.env.biwk.sub[i])))}
@@ -328,8 +160,7 @@ for (i in 4:ncol(pru.env.biwk.std)){ #starts at 4 to exclude Year, biweekly, and
 
 
 
-
-betad.biwk <- betadiver(catchmatrix.biwk.stdtrans.sub , "z") 
+betad.biwk <- betadiver(catchmatrix.biwk.stdtrans.sub , "z") # using Arrhenius z measure of beta diversity
 #adonis(betad.biwk ~ Temp_Top + Salin_Top + winddir_ew + meandisch_cfs + Year + Station + biweekly, pru.env.biwk.std, perm=999)
 adonis(betad.biwk ~ Temp_Top + Salin_Top + wind_vector + meandisch_cfs + Year + Station + biweekly, pru.env.biwk.std, perm=999)
 #winddir slightly better than speed. Temp signif if added first, but mostly captured by salin
@@ -351,9 +182,10 @@ adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + meandisch_cf
 permanova.biwk <- adonis2(catchmatrix.biwk.cpue.stdtrans.sub ~ Year + Station + as.factor(biweekly) + #Station*biweekly + 
                           Temp_Top + Salin_Top, 
                           pru.env.biwk.std, perm=999, by = "margin")
-permanova.biwk # Top PERMANOVA model. Explains 1-0.5254= 47.5% of variation
+permanova.biwk # Top PERMANOVA model. Explains 1-0.5254 = 47.5% of variation
 # everything is very significant. 
-# BIWEEKLY AS A FACTOR?
+
+# Explore using biweekly as a factor?
 
 adonis(catchmatrix.biwk.cpue.stdtrans.sub ~ Temp_Top + Salin_Top + Station + as.factor(biweekly) + Year, 
        pru.env.biwk.std, perm=999, by = "terms")
@@ -368,13 +200,6 @@ adonis(catchmatrix.biwk.cpue.stdtrans.sub ~ Station + as.factor(biweekly) + Year
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Station), main = "Biweekly")
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$Year), main = "Biweekly")
 boxplot(betadisper(betad.biwk, pru.env.biwk.sub$biweekly), main = "Biweekly")
-
-# Test visualization to see marginal effects cumulative plot
-# test1 <- data.frame(Var=c("Residual", "Discharge", "Wind", "Temp", "Year",  "Station", "Seasonality", "Salinity"), 
-#                    R2=c(0.57508, 0.00763, 0.01046, 0.01110, 0.01869, 0.06058, 0.12530, 0.19117))
-# test1$Var <- factor(test1$Var, levels = test1$Var)
-# ggplot(test1, aes(x="", y=R2, fill=Var)) + geom_bar(stat = "identity", width = 0.5) + 
-#   scale_fill_brewer(palette="Set3") + theme_bw() + labs(x="", y=bquote(Marginal~R^2))
 
 
 
@@ -396,40 +221,13 @@ EWsimper
 
 
 
-#Final nMDS Plot
-finalcolors <- c("#b9a3c6", "#0063a0", "#8cc687", "#d86a6a")
-
-
-
-ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
-  geom_point(aes(color=Station), cex=5) + 
-  #stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2, show.legend = FALSE) +
-  theme_bw() + theme(panel.grid.minor = element_blank(), 
-                     text=element_text(family="Times New Roman", size=12)) +
-  geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
-               cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
-               aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2, arrow = arrow(length = unit(12, "points"))) +
-  geom_label(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
-             mutate(species = rownames(.)) %>%
-             filter(species %in% topcorrspp), 
-             aes(x=MDS1, y=MDS2, label = species), family = "Times New Roman") +
-  #scale_color_manual(values =  finalcolors) +
-  scale_color_manual(values =  brewer.pal(4, "Set2")) 
-  # annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
-  # annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
-  # annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
-  # annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") 
-  # geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
-  #           aes(x=NMDS1, y=NMDS2, label="X", color=Station), fill="#e8e8e8", cex=5, show.legend = FALSE)
-
-#ggsave("plotexports/Fig_biwknMDS.png", dpi = 300, width = 7.5, height = 5)
 
 
 
 #finalcolors_BW <- c("#d6d6d6", "#575757", "#9b9b9b", "#7a7a7a") #ellipse colors
 finalcolors_BW <- c("#494949", "#9b9b9b", "#494949", "#9b9b9b") #ellipse colors
 
-# Same but B&W Version
+# Final plot in B&W version
 ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
   geom_point(aes(shape=Station, fill = Station), cex=4) + 
   scale_shape_manual(values=c(21,24,24,21)) +
@@ -470,4 +268,30 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
 
 
 
+
+# #Color nMDS Plot
+# finalcolors <- c("#b9a3c6", "#0063a0", "#8cc687", "#d86a6a")
+# 
+# ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
+#   geom_point(aes(color=Station), cex=5) + 
+#   #stat_ellipse(aes(group=Station, color=Station), size=2, linetype=2, show.legend = FALSE) +
+#   theme_bw() + theme(panel.grid.minor = element_blank(), 
+#                      text=element_text(family="Times New Roman", size=12)) +
+#   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
+#                  cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
+#                aes(x=0, xend=NMDS1 * (r2^0.5)/3, y=0, yend=NMDS2 * (r2^0.5)/3), cex = 2, arrow = arrow(length = unit(12, "points"))) +
+#   geom_label(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
+#                mutate(species = rownames(.)) %>%
+#                filter(species %in% topcorrspp), 
+#              aes(x=MDS1, y=MDS2, label = species), family = "Times New Roman") +
+#   #scale_color_manual(values =  finalcolors) +
+#   scale_color_manual(values =  brewer.pal(4, "Set2")) 
+# # annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
+# # annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
+# # annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
+# # annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") 
+# # geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
+# #           aes(x=NMDS1, y=NMDS2, label="X", color=Station), fill="#e8e8e8", cex=5, show.legend = FALSE)
+# 
+# #ggsave("plotexports/Fig_biwknMDS.png", dpi = 300, width = 7.5, height = 5)
 
