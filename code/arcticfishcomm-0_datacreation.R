@@ -5,10 +5,24 @@
 
 
 
-# This script documents how data were created
+# This script details how data were created for those curious. 
 # Because of data restrictions, not all of these data are public.
-# As such, much of the code below won't run
-# Begin with file "arcticfishcomm-1_import&cleanup.R"
+# As such, much of the code below won't run except for the authors.
+# To everyone else, begin with file "arcticfishcomm-1_import&cleanup.R"
+
+
+
+library(tidyverse)
+#library(tidyr)
+#library(tibble)
+library(lubridate)
+library(CircStats)
+library(here)
+
+source(here::here("code/functions.R"))
+
+
+
 
 
 # Read in the length, catch, and environmental data, plus species lookup table
@@ -78,8 +92,9 @@ catchenviron <- left_join(allcatch, watersalin %>% dplyr::select(-c(Month)),
 
 
 
-###################################
-# Join All Environmental Data
+#####################################
+#### Join All Environmental Data ####
+#####################################
 
 # This creates a dataframe summarizing annual environmental conditions at each site for each year
 # and keep in same order as the corresponding catch dataframe. 
@@ -139,32 +154,177 @@ pru.env.biwk <- pru.env.day %>%
 
 
 
+#############################
+#### CATCH DATA #############
+#############################
 
-###################################
-# Species Richness
+# Next, turn catch data into a 'wide' catch matrix (Species by Year/Station)
+# drop environ data too, just focusing on catch here
+catchmatrix.all <- catchenviron %>% group_by(Year, Station, Species) %>% summarise(anncount = sum(totcount)) %>%
+  spread(Species, value = anncount) %>% replace(., is.na(.), 0) %>% ungroup() #Make sure to replace NAs with 0
+catchmatrix.all <- catchmatrix.all %>% arrange(Year, Station) # Just to double check order is correct
+
+catchmatrix.day <- catchenviron %>% group_by(EndDate, Station, Species) %>% summarise(count = sum(totcount)) %>%
+  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
+catchmatrix.day <- catchmatrix.day %>% arrange(EndDate, Station) # Just to double check order is correct
+
+catchmatrix.biwk <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
+  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup()
+catchmatrix.biwk <- catchmatrix.biwk %>% arrange(Year, biweekly, Station) # Just to double check order is correct
+
+
+
+
+# Exclude rare species:
+# Right now analysis is for only species >100 fish, all years combined. Change 100 to 0 to inc all spp
+# the following code makes a list of the species to keep which have a threshold of 100 currently,
+# then filters based on this list, then turns back into wide format
+keepspp <- (catchmatrix.all %>% gather(Species, counts, -Year, -Station) %>%
+              group_by(Species) %>% summarize(counts = sum(counts)) %>% filter(counts > 100))$Species
+catchmatrix <- catchmatrix.all %>% gather(Species, counts, -Year, -Station) %>% filter(Species %in% keepspp) %>%
+  spread(Species, value = counts)
+catchmatrix.day <- catchmatrix.day %>% gather(Species, counts, -EndDate, -Station) %>% filter(Species %in% keepspp) %>%
+  spread(Species, value = counts)
+catchmatrix.biwk <- catchmatrix.biwk %>% gather(Species, counts, -Year, -biweekly, -Station) %>% filter(Species %in% keepspp) %>%
+  spread(Species, value = counts)
+
+# Setting rownames on a tibble is deprecated, convert to dataframes
+
+catchmatrix <- as.data.frame(catchmatrix)
+catchmatrix.day <- as.data.frame(catchmatrix.day)
+catchmatrix.biwk <- as.data.frame(catchmatrix.biwk)
+
+
+# Add row names for ease of checking later
+rownames(catchmatrix)      <- paste0(catchmatrix$Year, catchmatrix$Station)
+rownames(catchmatrix.day)  <- paste0(year(catchmatrix.day$EndDate), yday(catchmatrix.day$EndDate), catchmatrix.day$Station)
+#rownames(catchmatrix.biwk) <- paste0(catchmatrix.biwk$Year, catchmatrix.biwk$biweekly, catchmatrix.biwk$Station)
+
+
+# Delete the Year & Stn cols (can't be present for PERMANOVA)
+#pru.env.ann <- catchmatrix %>% dplyr::select(Year, Station)
+catchmatrix <- catchmatrix %>% dplyr::select(-Year, -Station)
+catchmatrix.all <- catchmatrix.all %>% dplyr::select(-Year, -Station)
+catchmatrix.day <- catchmatrix.day %>% dplyr::select(-EndDate, -Station)
+#catchmatrix.biwk <- catchmatrix.biwk %>% dplyr::select(-Year, -biweekly, -Station)
+
+# standardize catches 0 to 1 (1 is max catch in a given year/station)
+# note that the order corresponds to the now deleted Year/station combo. DON'T CHANGE ORDER
+catchmatrix.std <- catchmatrix 
+for (i in 1:ncol(catchmatrix.std)){ #make sure year/stn cols already dropped
+  catchmatrix.std[i] <- catchmatrix[i]/max(catchmatrix[i])}
+
+catchmatrix.day.std <- catchmatrix.day
+for (i in 1:ncol(catchmatrix.day.std)){ #make sure year/stn cols already dropped
+  catchmatrix.day.std[i] <- catchmatrix.day[i]/max(catchmatrix.day[i])}
+
+# for biweekly data, this is done in script 1
+
+
+
+
+#############################
+##### Species Richness ######
+#############################
 
 spp_richness <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Station != 231) %>% group_by(Year) %>% 
-  summarise(spp_yr = n_distinct(Species)) 
-
-spp_richness <- spp_richness %>% left_join(pru.env.ann %>% dplyr::select(-Station) %>% 
-                                             mutate(Year = as.numeric(Year) + 2000) %>%
-                                             group_by(Year) %>% summarise_all(mean), 
-                                           by = c("Year" = "Year"))
+  summarise(spp_yr = n_distinct(Species)) %>% 
+  left_join(pru.env.ann %>% dplyr::select(-Station) %>% 
+              mutate(Year = as.numeric(Year) + 2000) %>%
+              group_by(Year) %>% summarise_all(mean), 
+            by = c("Year" = "Year"))
 
 
 spp_richness.biwk <- allcatch %>% filter(Species != "HYCS" & Species != "UNKN" & Station != 231) %>%
-  addbiwknum() %>% group_by(Year, biweekly) %>% summarise(num_spp = n_distinct(Species)) %>% 
-  left_join(effort.biwk %>% dplyr::select(biweekly, sample_proportion), 
-            by = c("Year" = "Year", "biweekly" = "biweekly")) %>%
-  mutate(num_spp_adj = num_spp * sample_proportion)
+  addbiwknum() %>% group_by(Year, biweekly) %>% summarise(num_spp = n_distinct(Species)) 
 
 
 
+
+#########################
+##### Rare Species ######
+#########################
+
+rarespp.biwk.pres <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
+  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup() %>% 
+  gather(Species, pres.abs, -Year, -biweekly, -Station) %>% 
+  filter(!Species %in% keepspp, Species != "UNKN", Species != "HYCS") %>% # Remove Unknowns and Hybrids
+  mutate(Species = replace(Species, Species == "KPSF", "LIPA")) # Combine Kelp Snailfish & unid Liparids
+
+rarespp.biwk.pres$pres.abs[rarespp.biwk.pres$pres.abs > 0] <- 1 # Turn into presence / absence
+
+
+
+
+
+
+######################
 ##### WRITE CSVs #####
+######################
 
 
-write.csv(spp_richness, "data/speciesrichness_annual_2001-2018.csv")
-write.csv(spp_richness.biwk, "data/speciesrichness_biwk_2001-2018.csv")
+# Use write_csv not write.csv to avoid annoying rowname column
+write_csv(catchmatrix.biwk, "data/prudhoecatchmatrixbiwk_2001-2018.csv")
+
+write_csv(spp_richness, "data/prudhoespeciesrichness_annual_2001-2018.csv")
+write_csv(spp_richness.biwk, "data/prudhoespeciesrichness_biwk_2001-2018.csv")
+
+write_csv(pru.env.biwk, "data/prudhoe_envdatabiweekly_2001-2018.csv")
+
+write_csv(rarespp.biwk.pres, "data/prudhoe_rarespeciesbiwk_2001-2018.csv")
 
 
 
+
+
+##########################################
+#APPENDIX
+
+# Wind Data Creation
+# The daily wind data was created using the following code:
+# windhourly <- read.csv("../../Slope Project/Data/deadhorsewind_2001-2018_hourly.csv", header = TRUE, 
+#          stringsAsFactors = FALSE) %>%
+#   select(DATE, HOURLYWindSpeed, HOURLYWindDirection) %>% #remove extraneous data
+#   rename(Date = DATE,
+#          windhrly_mph = HOURLYWindSpeed,
+#          windhrly_dir = HOURLYWindDirection) %>% 
+#   mutate(Date = ymd(as.POSIXct(Date, format = "%m/%d/%Y")),
+#          month = month(Date)) %>%
+#   mutate_if(is.character, as.numeric) %>% select(Date, month, everything())
+# 
+# library(CircStats)
+# winddaily <- windhourly %>% mutate(Year = year(Date)) %>% group_by(Date) %>% 
+#   summarise(dailymeanspeed = mean(windhrly_mph, na.rm = TRUE),
+#             dailymeandir = ((circ.mean(2*pi*na.omit(windhrly_dir)/360))*(360 / (2*pi))) %%360 )
+# 
+# write.csv(winddaily, file="deadhorsewind_2001-2018_summarized.csv")
+
+
+
+# Effort Data Creation 
+# effort <- full_join(all.len %>%
+#                       distinct(EndDate, Net), 
+#                     allcatch %>% distinct(EndDate, Net), 
+#                     by = c("EndDate", "Net")) %>% 
+#   left_join(all.len %>%
+#               dplyr::select(EndDate, Net, StartDateTime, EndDateTime), 
+#             by = c("EndDate", "Net")) %>% 
+#   distinct(EndDate, Net, StartDateTime, EndDateTime) %>%
+#   #this first mutate MANUALLY adds in skipped dates
+#   mutate(StartDateTime=replace(StartDateTime, EndDate=="2018-07-10" & Net == "230N", 
+#                                as.POSIXct("2018-07-09 09:25")), 
+#          EndDateTime=replace(EndDateTime, EndDate=="2018-07-10" & Net == "230N", 
+#                              as.POSIXct("2018-07-10 08:55")), 
+#          
+#          StartDateTime=replace(StartDateTime, EndDate=="2018-07-24" & Net == "220W", 
+#                                as.POSIXct("2018-07-23 09:15")), 
+#          EndDateTime=replace(EndDateTime, EndDate=="2018-07-24" & Net == "220W", 
+#                              as.POSIXct("2018-07-24 14:45"))) %>% 
+#   mutate(Year = year(EndDate),
+#          Effort_NetHrs = as.numeric(EndDateTime - StartDateTime),
+#          Station = substr(Net, 1,3)) %>%
+#   arrange(EndDate, Net, Station)
+# # A few NAs occur when we have catch but no lengths for that day 
+# # (because the times are recorded in the length dataframe!)
+# 
+# write.csv(effort, "prudhoeeffort_2001-2018.csv")

@@ -113,9 +113,8 @@ bioenv(braydist.biwk ~ as.numeric(Year) + as.numeric(biweekly) + meandisch_cfs +
 # does not change results
 
 mantel(braydist.biwk, vegdist(pru.env.biwk %>% ungroup() %>%
-         dplyr::select(biweekly, Salin_Top, Temp_Top), permutations = 999), method = "spearman")
-
-
+         dplyr::select(biweekly, Salin_Top, Temp_Top), permutations = 999, na.rm = TRUE), method = "spearman")
+# JTP June 2021: just had to add na.rm argument, double check this doesn't change results
 
 
 ## EnvFit ##
@@ -257,9 +256,10 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
   annotate("text", x=0.05, y=-0.26, label= "230", family = "Times New Roman") +
   annotate("text", x=0.08, y=-0.19, label= "214", family = "Times New Roman") +
   annotate("text", x=-0.18, y=0.13, label= "218", family = "Times New Roman") +
-  annotate("text", x=-0.15, y=0.19, label= "220", family = "Times New Roman") +
-  geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
-             aes(x=NMDS1, y=NMDS2, label="X"), color="black", fill="light gray", cex=4, show.legend = FALSE)
+  annotate("text", x=-0.15, y=0.19, label= "220", family = "Times New Roman") 
+#  geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
+#             aes(x=NMDS1, y=NMDS2, label="X"), color="black", fill="light gray", cex=4, show.legend = FALSE)
+#Last two lines don't run anymore because env.vectors.biwk$factors is NULL
 
 #ggsave("plotexports/Fig_biwknMDS_BW.png", dpi = 300, width = 7.5, height = 5)
 
@@ -294,4 +294,21 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
 # #           aes(x=NMDS1, y=NMDS2, label="X", color=Station), fill="#e8e8e8", cex=5, show.legend = FALSE)
 # 
 # #ggsave("plotexports/Fig_biwknMDS.png", dpi = 300, width = 7.5, height = 5)
+
+
+temp1 <- pru.env.biwk %>% 
+  dplyr::select(Year, biweekly, Station, Salin_Top, Temp_Top) %>%
+  mutate(Station = as.factor(Station))
+temp1
+
+
+temp <- envfit(totalNMDS.biwk, temp1,   
+       na.rm = TRUE, permutations = 999)
+temp
+str(temp)
+
+temp$factors$centroids
+
+
+
 

@@ -232,9 +232,3 @@ visreg(mds3.gam3)
 # Compare the three models + null:
 AIC(mds3.gam1, mds3.gam2, mds3.gam3, gam(MDS3 ~ 1, data = nmdspoints.biwk))
 # all 3 models about the same. No time trend slightly best
-
-par(mfrow(c(1,1,)))
-
-
-visreg(mds1.gam2, "Year")
-visreg(mds2.gam2, "Year")

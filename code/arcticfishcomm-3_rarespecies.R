@@ -9,13 +9,6 @@ source(here::here("code/arcticfishcomm-1_import&cleanup.R"))
 # Data Import and Cleanup
 
 
-rarespp.biwk.pres <- catchenviron %>% group_by(Year, biweekly, Station, Species) %>% summarise(count = sum(totcount)) %>%
-  spread(Species, value = count) %>% replace(., is.na(.), 0) %>% ungroup() %>% 
-  gather(Species, pres.abs, -Year, -biweekly, -Station) %>% 
-  filter(!Species %in% keepspp, Species != "UNKN", Species != "HYCS") %>% # Remove Unknowns and Hybrids
-  mutate(Species = replace(Species, Species == "KPSF", "LIPA")) # Combine Kelp Snailfish & unid Liparids
-
-rarespp.biwk.pres$pres.abs[rarespp.biwk.pres$pres.abs > 0] <- 1 # Turn into presence / absence
 
 
 #rarespp.biwk.pres %>% spread(Species, value = pres.abs) # turn wide to view it

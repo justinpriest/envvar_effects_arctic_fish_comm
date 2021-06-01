@@ -4,10 +4,10 @@
 ### Note ###
 # Many of the original decisions and explored side trails are not present in this script.
 # Notes from F Mueter were present in the original version of this file in
-thesis2019_Ch1_2-speciesrichness.R
+# script "thesis2019_Ch1_2-speciesrichness.R"
 
 
-library(ggplot2)
+
 library(viridis)
 library(MuMIn)
 library(mgcv)
@@ -131,6 +131,61 @@ vis.gam(testgam, plot.type="contour", color="terrain")
 
 gratia::draw(topmod.spprich)
 gratia::appraise(topmod.spprich)
+
+
+
+################################
+# Model comparison code from FJM
+
+biweekly <- spp_richness.biwk %>% 
+  left_join(effort.biwk %>% dplyr::select(Year, biweekly, sample_proportion), 
+            by = c("Year" = "Year", "biweekly" = "biweekly", "sample_proportion" = "sample_proportion"))
+biweekly$Year.fac <- factor(biweekly$Year)
+biweekly <- rename(biweekly, effort = sample_proportion)
+
+# GAM models with smooth seasonal term, random intercept
+# for Year, and effort
+biwk.gam1 <- gam(num_spp ~ s(biweekly, k=4) + s(effort, k=4)
+                 + s(Year.fac, bs="re") 
+                 + Year, data=biweekly, 
+                 select=T, method="ML")
+summary(biwk.gam1)
+par(mfrow=c(2,2), mar=c(4,4,1,1))
+visreg(biwk.gam1)
+
+# For the biweekly model, the effort term is not significant,
+# but richness does increase some with effort, as expected.
+# This may suggest that - over two weeks of sampling - you 
+# generally pick up all the species that are present, so you
+# could safely remove effort from model:
+biwk.gam2 <- gam(num_spp ~ s(biweekly, k=4)
+                 + s(Year.fac, bs="re") 
+                 + Year, data=biweekly, 
+                 select=T, method="ML")
+summary(biwk.gam2)
+par(mfrow=c(2,2), mar=c(4,4,1,1))
+visreg(biwk.gam2)
+
+# One thing to note is that the uncertainty in the linear time
+# trend is a lot larger than in your Fig. 1 and that is likely
+# due to including the random effect:
+biwk.gam3 <- gam(num_spp ~ s(biweekly, k=4)
+                 + Year, data=biweekly, 
+                 select=T, method="ML")
+summary(biwk.gam3)
+par(mfrow=c(2,2), mar=c(4,4,1,1))
+visreg(biwk.gam3)
+# Much tighter CI for both seasonal and long-term trend,
+# but the model has strong residual patterns with some
+# years having all negative and others all positive residuals
+# --> that's why we need the random year effect!
+
+AIC(biwk.gam1, biwk.gam2, biwk.gam3)
+# The second model also the AIC-preferred model
+biwk.gam2 # TOP SPECIES RICHNESS MODEL
+
+
+
 
 
 ## Plotting top model
