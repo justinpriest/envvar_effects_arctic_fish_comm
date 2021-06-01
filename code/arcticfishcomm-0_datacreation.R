@@ -256,8 +256,6 @@ rarespp.biwk.pres$pres.abs[rarespp.biwk.pres$pres.abs > 0] <- 1 # Turn into pres
 
 
 
-
-
 ######################
 ##### WRITE CSVs #####
 ######################

@@ -145,7 +145,8 @@ for (i in 1:ncol(catchmatrix.biwk.cpue.stdtrans)){ #make sure year/stn cols alre
 
 #########################
 ##### Rare Species ######
-rarespp.biwk.pres <- read_csv("data/prudhoe_rarespeciesbiwk_2001-2018.csv")
+rarespp.biwk.pres <- read_csv("data/prudhoe_rarespeciesbiwk_2001-2018.csv") %>%
+  mutate(Station = as.factor(Station))
 
 
 
@@ -154,4 +155,12 @@ rarespp.biwk.pres <- read_csv("data/prudhoe_rarespeciesbiwk_2001-2018.csv")
 ####################################
 ##### Environmental Variables ######
 pru.env.biwk <- read_csv("data/prudhoe_envdatabiweekly_2001-2018.csv")
+
+
+# These are the "common" species. See script_0 for how this list was determined.
+# Changes in this list shouldn't affect any analysis, but is used for plotting
+keepspp <- c("ARCD", "ARCS", "ARFL", "BDWF", "CAPE", "DLVN", 
+  "FHSC", "GRAY", "HBWF", "LSCS", "NNSB", "PCHG", 
+  "PINK", "RBSM", "RDWF", "SFCD", "THSB")
+
 

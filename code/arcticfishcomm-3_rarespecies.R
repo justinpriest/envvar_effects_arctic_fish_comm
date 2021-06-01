@@ -6,10 +6,7 @@ library(scales)
 source(here::here("code/arcticfishcomm-1_import&cleanup.R"))
 
 
-# Data Import and Cleanup
-
-
-
+# Data Summary
 
 #rarespp.biwk.pres %>% spread(Species, value = pres.abs) # turn wide to view it
 rarespp.biwk.pres %>% group_by(Species) %>% summarise(instances = sum(pres.abs)) # summarize total catch instances

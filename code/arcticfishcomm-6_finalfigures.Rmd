@@ -192,7 +192,7 @@ sd(pru.env.biwk$meandisch_cfs)
 
 
 
-```{r spprichness}
+```{r Fig4_spprichness}
 spprichplot.biwk <- ggplot(predspeciesrich %>% group_by(biweekly) %>% 
          summarise(pred.gam = mean(pred.gam),
                    pred.gam.se = mean(pred.gam.se)), 
@@ -238,7 +238,7 @@ spprichplots
 ```
 
 
-```{r specieschange}
+```{r Table2_specieschange}
 
 keepspp
 
@@ -272,18 +272,21 @@ for(k in 1:length(keepspp)){
   
 }
 
-
+# TABLE 2
 speciesoutput %>% 
   left_join(spplookup, by = c("Species" = "Species")) %>% 
   dplyr::select(commonname, everything(), -Species, -familygroup) %>%
   arrange(commonname) %>% rename(Species = commonname) %>% 
   kable(digits = c(0,1,3,1,3,1,3,2,3))
 
+
 ```
 
 
 
 ```{r rarespeciesfigure}
+
+
 
 predictedvals <- expand.grid(Year = 2001:2018, biweekly = 1:4, 
                              #Species = c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC"),
