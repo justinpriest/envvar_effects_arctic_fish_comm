@@ -234,7 +234,7 @@ spprichplot.year <- ggplot(predspeciesrich %>% group_by(Year) %>%
         panel.grid.minor=element_blank()) #axis.ticks.y=element_blank()
 
 
-spprichplots <- cowplot::plot_grid(spprichplot.biwk, spprichplot.year, labels = c("A", "B"), 
+spprichplots <- cowplot::plot_grid(spprichplot.biwk, spprichplot.year, labels = c("a", "b"), 
                                    label_fontfamily = "Arial",
                                    label_x = 0.15, label_y = 0.96, ncol =2, align = 'h')
 spprichplots
