@@ -99,7 +99,7 @@ data.frame(permanova.biwk)
 
 
 
-```{r envtimeseries}
+```{r Fig2_envtimeseries}
 
 catchenviron %>% group_by(Species) %>% summarise(sum(totcount)) %>% kable()
 
@@ -127,22 +127,26 @@ scaledenv.ann.stn <- pru.env.ann %>% group_by(Year, Station) %>%
   summarise_at(vars(annwindspeed_kph:annwinddir_ew), mean, na.rm = TRUE) %>% #annual means, all stns included
   mutate_at(vars(annwindspeed_kph:annwinddir_ew), scale)
 
-ggplot(scaledenv.ann.stn %>% dplyr::select(Year, Station, annsal_ppt, anntemp_c) %>% 
-       gather(key = "env_var", "scaled_value", -c(Year, Station)), 
+envtimeplot <- ggplot(scaledenv.ann.stn %>% dplyr::select(Year, Station, annsal_ppt, anntemp_c) %>% 
+         gather(key = "env_var", "scaled_value", -c(Year, Station)) %>%
+         mutate(Station = factor(Station, levels = c("230", "214", "218", "220"))), 
        aes(x=as.numeric(Year)+2000, y=scaled_value)) + 
   geom_line(aes(color=Station, linetype=Station), cex=1.5) +
   scale_x_continuous(breaks = seq(2001, 2018, by = 2)) +
   #scale_linetype_manual(values=c("solid", "dotted", "solid", "dotted")) +
-  scale_linetype_manual(values=c("solid", "solid", "dotted", "dotted")) +
-  scale_color_manual(values = c("#000000", "#727272", "#000000", "#727272")) + 
+  scale_linetype_manual(values=c("dotted", "solid", "solid",  "dotted")) +
+  scale_color_manual(values = c("#727272", "#000000", "#727272", "#000000")) + 
   labs(x="", y="Scaled value, mu=0, sd=1") +
   facet_wrap(~env_var, labeller = as_labeller(c(`annsal_ppt` = "Salinity", `anntemp_c` = "Water Temperature"))) +
   theme_bw() + 
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank(), 
-        text=element_text(family="Times New Roman", size=12), 
+        text=element_text(family="Arial", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1),
         strip.background = element_blank()) # could also do element_rect(fill="white")
-#ggsave(here::here("plotexports/Fig_envvar.png"), dpi = 300, width = 7.5, height = 5)
+envtimeplot
+
+# ggsave(plot = envtimeplot, here::here("plotexports/Fig2_envvar.png"), 
+#        dpi = 600, width = 7.5, height = 5)
 
 
 summary(lm(annsal_ppt ~ as.numeric(Year) + Station, data = pru.env.ann))
@@ -188,6 +192,11 @@ sd(pru.env.biwk$meandisch_cfs)
 
 
 ```
+```{r Fig3_nMDS}
+
+# Fig3 is in script 4 PERMANOVA
+
+```
 
 
 
@@ -202,7 +211,7 @@ spprichplot.biwk <- ggplot(predspeciesrich %>% group_by(biweekly) %>%
   xlab("Biweekly Period") + ylab("Predicted Species Richness") +
   scale_y_continuous(limits = c(13, 19), breaks = 13:18, oob=scales::rescale_none) +
   theme_bw() +
-  theme(text=element_text(family="Times New Roman", size=12),
+  theme(text=element_text(family="Arial", size=12),
         #panel.grid.major=element_blank(),
         panel.grid.minor=element_blank())
 
@@ -218,7 +227,7 @@ spprichplot.year <- ggplot(predspeciesrich %>% group_by(Year) %>%
   scale_x_continuous(breaks = seq(from=2001, to=2018, by=2)) +
   scale_y_continuous(limits = c(13, 19), breaks = 13:18, oob=scales::rescale_none) +
   theme_bw() +
-  theme(text=element_text(family="Times New Roman", size=12), 
+  theme(text=element_text(family="Arial", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1), 
         axis.text.y=element_blank(),
         #panel.grid.major=element_blank(),
@@ -226,10 +235,11 @@ spprichplot.year <- ggplot(predspeciesrich %>% group_by(Year) %>%
 
 
 spprichplots <- cowplot::plot_grid(spprichplot.biwk, spprichplot.year, labels = c("A", "B"), 
-                                   label_fontfamily = "Times New Roman",
+                                   label_fontfamily = "Arial",
                                    label_x = 0.15, label_y = 0.96, ncol =2, align = 'h')
 spprichplots
-#ggsave(here::here("plotexports/Fig_spprichness2plot_V2.png"), plot = spprichplots,  width = 6, height = 4, units = "in")
+#ggsave(here::here("plotexports/Fig4_spprichness.png"), 
+#       plot = spprichplots, dpi = 600, width = 6, height = 4, units = "in")
 
 
 
@@ -284,9 +294,7 @@ speciesoutput %>%
 
 
 
-```{r rarespeciesfigure}
-
-
+```{r Fig5_rarespeciesfigure}
 
 predictedvals <- expand.grid(Year = 2001:2018, biweekly = 1:4, 
                              #Species = c("BRBT", "BRCS", "CHUM", "LIPA", "SLSC"),
@@ -319,18 +327,17 @@ rarespp_plot <- ggplot(data = predictedvals.year) +
   scale_y_continuous(limits = c(0,0.2), oob=scales::rescale_none) +
   ylab("Predicted Biweekly Presence ") + xlab("") +
   theme_bw() +
-  theme(text=element_text(family="Times New Roman", size=12), 
+  theme(text=element_text(family="Arial", size=12), 
         axis.text.x = element_text(angle = 35, hjust = 1)) +
-  annotate("text", x=2015.5, y=0.015, label= "Slimy\nSculpin", family = "Times New Roman") +
-  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco", family = "Times New Roman") +
-  annotate("text", x=2005.5, y=0.02, label= "Burbot", family = "Times New Roman")
+  annotate("text", x=2015.5, y=0.015, label= "Slimy\nSculpin", family = "Arial") +
+  annotate("text", x=2008.5, y=0.12, label= "Bering\nCisco", family = "Arial") +
+  annotate("text", x=2005.5, y=0.02, label= "Burbot", family = "Arial")
 rarespp_plot
-#ggsave(here::here("plotexports/Fig_rarespecies.png"), plot = rarespp_plot, width = 6, height = 4, units = "in")
+ggsave(here::here("plotexports/Fig5_rarespecies.png"), 
+       dpi = 600, plot = rarespp_plot, width = 6, height = 4, units = "in")
 # need to gather and put in long format if we want to direct label
 
 #predictedvals.year %>% gather(Species, val, -Year)
-
-
 
 
 

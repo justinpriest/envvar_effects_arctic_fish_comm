@@ -119,6 +119,7 @@ mantel(braydist.biwk, vegdist(pru.env.biwk %>% ungroup() %>%
 
 ## EnvFit ##
 env.vectors.biwk <- envfit(totalNMDS.biwk, pru.env.biwk %>% 
+                             mutate(Station = factor(Station)) %>%
                            #dplyr::select(-winddir_ew, -Salin_Mid, -Temp_Mid), 
                            dplyr::select(Year, biweekly, Station, Salin_Top, Temp_Top),   
                            na.rm = TRUE, permutations = 999)
@@ -224,17 +225,19 @@ EWsimper
 
 
 #finalcolors_BW <- c("#d6d6d6", "#575757", "#9b9b9b", "#7a7a7a") #ellipse colors
-finalcolors_BW <- c("#494949", "#9b9b9b", "#494949", "#9b9b9b") #ellipse colors
+finalcolors_BW <- c("#9b9b9b", "#494949", "#9b9b9b", "#494949") #ellipse colors
 
 # Final plot in B&W version
-ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) + 
+Fig3nMDS <- ggplot(nmdspoints.biwk %>%
+         mutate(Station=factor(Station, levels=c("230", "214", "218", "220"))), # reorder factor by east-west
+       aes(x=MDS1, y=MDS2)) + 
   geom_point(aes(shape=Station, fill = Station), cex=4) + 
-  scale_shape_manual(values=c(21,24,24,21)) +
-  scale_fill_manual(values =  c("#494949", "#ffffff", "#494949", "#ffffff")) +
+  scale_shape_manual(values=c(21, 21, 24, 24)) +
+  scale_fill_manual(values =  c("#ffffff", "#494949", "#ffffff", "#494949")) +
   stat_ellipse(aes(group=Station, color=Station, lty=Station), size=2, show.legend = FALSE) + # turn on/off legend
-  scale_linetype_manual(values=c(1,2,1,2)) + # can change linetypes here
+  scale_linetype_manual(values=c(2,1,2,1)) + # can change linetypes here
   theme_bw() + theme(panel.grid.minor = element_blank(), 
-                     text=element_text(family="Times New Roman", size=12)) +
+                     text=element_text(family="Arial", size=12)) +
   coord_cartesian(xlim = c(-0.31, 0.31), ylim = c(-0.27, 0.21), expand = FALSE) + # added slight above and below
   geom_segment(data = data.frame(env.vectors.biwk$vectors$arrows) %>% 
                  cbind(r2=env.vectors.biwk$vectors$r, pval = env.vectors.biwk$vectors$pvals), 
@@ -242,27 +245,28 @@ ggplot(nmdspoints.biwk, aes(x=MDS1, y=MDS2)) +
   geom_label(data = data.frame(wascores(totalNMDS.biwk$points, w = catchmatrix.biwk.cpue)) %>% 
                mutate(species = rownames(.)) %>%
                filter(species %in% topcorrspp), 
-             aes(x=MDS1, y=MDS2, label = species), family = "Times New Roman") +
+             aes(x=MDS1, y=MDS2, label = species), family = "Arial") +
   scale_color_manual(values =  finalcolors_BW) + #ellipse color
-  #annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Times New Roman") +
-  #annotate("text", x=-0.05, y=0.01, label= "Year", family = "Times New Roman") +
-  #annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Times New Roman") +
-  #annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Times New Roman") + 
-  annotate("text", x=0.2, y=-0.25, label= "Stress = 0.156", family = "Times New Roman") + 
-  geom_label(aes(x=0.2, y=-0.14, label = "Biweekly"), fill = "black", color = "white", family = "Times New Roman") +
-  geom_label(aes(x=0.21, y=0.15, label = "Salinity"), fill = "black", color = "white", family = "Times New Roman") +
-  geom_label(aes(x=-0.05, y=0.01, label = "Year"), fill = "black", color = "white", family = "Times New Roman") +
-  geom_label(aes(x=0.02, y=-0.07, label = "Temp"), fill = "black", color = "white", family = "Times New Roman") +
-  annotate("text", x=0.05, y=-0.26, label= "230", family = "Times New Roman") +
-  annotate("text", x=0.08, y=-0.19, label= "214", family = "Times New Roman") +
-  annotate("text", x=-0.18, y=0.13, label= "218", family = "Times New Roman") +
-  annotate("text", x=-0.15, y=0.19, label= "220", family = "Times New Roman") 
-#  geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )), 
-#             aes(x=NMDS1, y=NMDS2, label="X"), color="black", fill="light gray", cex=4, show.legend = FALSE)
-#Last two lines don't run anymore because env.vectors.biwk$factors is NULL
+  #annotate("text", x=0.21, y=0.15, label= "Salinity", family = "Arial") +
+  #annotate("text", x=-0.05, y=0.01, label= "Year", family = "Arial") +
+  #annotate("text", x=0.2, y=-0.13, label= "Biweekly", family = "Arial") +
+  #annotate("text", x=0.02, y=-0.07, label= "Temp", family = "Arial") + 
+  annotate("text", x=0.2, y=-0.25, label= "Stress = 0.156", family = "Arial") + 
+  geom_label(aes(x=0.2, y=-0.14, label = "Biweekly"), fill = "black", color = "white", family = "Arial") +
+  geom_label(aes(x=0.21, y=0.15, label = "Salinity"), fill = "black", color = "white", family = "Arial") +
+  geom_label(aes(x=-0.05, y=0.01, label = "Year"), fill = "black", color = "white", family = "Arial") +
+  geom_label(aes(x=0.02, y=-0.07, label = "Temp"), fill = "black", color = "white", family = "Arial") +
+  annotate("text", x=0.05, y=-0.26, label= "230", family = "Arial") +
+  annotate("text", x=0.08, y=-0.19, label= "214", family = "Arial") +
+  annotate("text", x=-0.18, y=0.13, label= "218", family = "Arial") +
+  annotate("text", x=-0.15, y=0.19, label= "220", family = "Arial") +
+  geom_label(data=as.data.frame(env.vectors.biwk$factors$centroids) %>% mutate(Station = as.factor(substr(row.names(.), 8, 10) )),
+             aes(x=NMDS1, y=NMDS2, label="X"), color="black", fill="light gray", cex=4, show.legend = FALSE)
+Fig3nMDS
 
-#ggsave("plotexports/Fig_biwknMDS_BW.png", dpi = 300, width = 7.5, height = 5)
-
+#ggsave(plot = Fig3nMDS, "plotexports/Fig3_biwknMDS_BW.png", dpi = 600, width = 7.5, height = 5)
+#ggsave(plot = Fig3nMDS, "plotexports/Fig3_biwknMDS_BW.eps", dpi = 600, width = 7.5, height = 5, device = "eps")
+# eps save won't work "family 'Arial' not included in postscript() device"
 
 
 
