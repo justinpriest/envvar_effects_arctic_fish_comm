@@ -128,24 +128,25 @@ scaledenv.ann.stn <- pru.env.ann %>% group_by(Year, Station) %>%
   mutate_at(vars(annwindspeed_kph:annwinddir_ew), scale)
 
 envtimeplot <- ggplot(scaledenv.ann.stn %>% dplyr::select(Year, Station, annsal_ppt, anntemp_c) %>% 
-         gather(key = "env_var", "scaled_value", -c(Year, Station)) %>%
-         mutate(Station = factor(Station, levels = c("230", "214", "218", "220"))), 
-       aes(x=as.numeric(Year)+2000, y=scaled_value)) + 
+                        gather(key = "env_var", "scaled_value", -c(Year, Station)) %>%
+                        mutate(Station = factor(Station, levels = c("230", "214", "218", "220"))), 
+                      aes(x=as.numeric(Year)+2000, y=scaled_value)) + 
   geom_line(aes(color=Station, linetype=Station), cex=1.5) +
   scale_x_continuous(breaks = seq(2001, 2018, by = 2)) +
   #scale_linetype_manual(values=c("solid", "dotted", "solid", "dotted")) +
-  scale_linetype_manual(values=c("dotted", "solid", "solid",  "dotted")) +
+  scale_linetype_manual(values=c("41", "solid", "solid",  "41")) +
   scale_color_manual(values = c("#727272", "#000000", "#727272", "#000000")) + 
-  labs(x="", y="Scaled value, mu=0, sd=1") +
+  labs(x="", y=expression(paste("Scaled value, ", italic(" \u00b5"), "=0, SD=1"))) +
   facet_wrap(~env_var, labeller = as_labeller(c(`annsal_ppt` = "Salinity", `anntemp_c` = "Water Temperature"))) +
   theme_bw() + 
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank(), 
-        text=element_text(family="Arial", size=12), 
+        text=element_text(family = "Arial", size = 12), 
         axis.text.x = element_text(angle = 35, hjust = 1),
+        legend.key.width = unit(8, "mm"),
         strip.background = element_blank()) # could also do element_rect(fill="white")
 envtimeplot
 
-# ggsave(plot = envtimeplot, here::here("plotexports/Fig2_envvar.png"), 
+# ggsave(plot = envtimeplot, here::here("plotexports/Fig2_envvar_V2.png"), 
 #        dpi = 600, width = 7.5, height = 5)
 
 

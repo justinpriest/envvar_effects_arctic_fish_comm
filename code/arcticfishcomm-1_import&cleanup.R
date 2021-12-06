@@ -131,7 +131,7 @@ catchmatrix.biwk.cpue <- catchmatrix.biwk.cpue %>% dplyr::select(-Year, -biweekl
 catchmatrix.biwk.stdtrans <- catchmatrix.biwk
 for (i in 1:ncol(catchmatrix.biwk.stdtrans)){ #make sure year/stn cols already dropped
   catchmatrix.biwk.stdtrans[i] <- (catchmatrix.biwk[i]^0.25)/max((catchmatrix.biwk[i]^0.25))}
-#using 4th root tranform
+#using 4th root transform
 
 catchmatrix.biwk.cpue.stdtrans <- catchmatrix.biwk.cpue
 for (i in 1:ncol(catchmatrix.biwk.cpue.stdtrans)){ #make sure year/stn cols already dropped
